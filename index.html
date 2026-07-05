@@ -1,30 +1,2791 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mes Voyages</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  body{font-family:system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;background:#F7F4F0;color:#5C5248;gap:14px}
-  .spin{width:28px;height:28px;border:3px solid #DDD8D0;border-top-color:#C0392B;border-radius:50%;animation:s .8s linear infinite}
-  @keyframes s{to{transform:rotate(360deg)}}
+@import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
+:root{
+  --bg:#F7F4F0;
+  --surface:#FFFFFF;
+  --surface2:#F0EDE8;
+  --border:#DDD8D0;
+  --border2:#C8C0B4;
+  --text:#1C1814;
+  --text2:#5C5248;
+  --text3:#9C948A;
+  --ink:#2C1810;
+  --red:#C0392B;
+  --red-lt:#F8EAE8;
+  --red-mid:#E8756A;
+  --red-dk:#A0251A;
+  --washi:#E8DDD0;
+  --washi-dk:#B8A898;
+  --washi-lt:#FAF7F4;
+  --gold:#C8A050;
+  --gold-lt:#F5EDD8;
+  --gold-dk:#9A7828;
+  --sumi:#3A3028;
+  --sumi-lt:#6A6058;
+  --indigo:#2A3858;
+  --indigo-lt:#E8EDF5;
+  --indigo-mid:#6A80A8;
+  --moss:#3A5A38;
+  --moss-lt:#E8F0E8;
+  --moss-mid:#7A9A78;
+  --r:10px;--r-sm:6px;--r-lg:14px;
+  --sh:0 1px 4px rgba(28,24,20,.07);
+  --sh-md:0 4px 16px rgba(28,24,20,.10);
+  --sh-lg:0 8px 32px rgba(28,24,20,.14);
+  --tr:.22s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="night"]{--bg:#1C1C22;--surface:#26262E;--surface2:#30303A;--border:#3E3E4A;--border2:#5A5A6A;--text:#F0EDE8;--text2:#C0BCB6;--text3:#8A8680;--ink:#F0EDE8;--red:#E06055;--red-lt:#2E1E1C;--red-mid:#E06055;--red-dk:#C03028;--gold:#D4AA5A;--gold-lt:#2A2418;--gold-dk:#D4AA5A;--washi:#3A3840;--washi-lt:#28282E;--washi-dk:#9A9490;--moss:#5AAA58;--moss-lt:#1A2A1A;--moss-mid:#5AAA58;--indigo:#7A9ACA;--indigo-lt:#1A1E2A;--indigo-mid:#7A9ACA;--sumi:#F0EDE8;--sumi-lt:#C0BCB6;--bg-btn:#F0EDE8}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px;scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ─── SIDEBAR ─── */
+#sb{width:248px;min-width:248px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:width var(--tr),min-width var(--tr);overflow:hidden;z-index:100;position:relative;box-shadow:1px 0 0 var(--border)}
+#sb.col{width:48px;min-width:48px}
+#sb.col .sl,#sb.col .st,#sb.col .sa,#sb.col .lb,#sb.col .bdg{display:none}
+#sb.col .ni{justify-content:center;padding:8px;gap:0}
+.sh{padding:20px 16px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;min-height:60px;position:relative;background:var(--surface)}
+.sl0{font-family:'Shippori Mincho',serif;font-size:18px;font-weight:600;color:var(--red);letter-spacing:.04em;flex-shrink:0}
+.sl{font-family:'Shippori Mincho',serif;font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;letter-spacing:.06em;line-height:1.3}
+.sl span{display:block;font-size:10px;font-weight:400;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;margin-top:1px}
+#sb.col .sl{opacity:0;width:0}
+.scb{position:absolute;top:50%;right:10px;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);padding:4px;border-radius:5px;font-size:12px;transition:all var(--tr)}
+.scb:hover{background:var(--surface2);color:var(--text)}
+.sn{flex:1;overflow-y:auto;padding:8px 0}
+.ss{margin-bottom:2px}
+.ssh{display:flex;align-items:center;gap:8px;padding:5px 14px;cursor:pointer;user-select:none;margin-top:6px}
+.st{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);flex:1}
+.sa{font-size:9px;color:var(--text3);transition:transform .2s}
+.ss.open .sa{transform:rotate(90deg)}
+.si{display:none}.ss.open .si{display:block}
+.ni{display:flex;align-items:center;gap:9px;padding:6px 12px;cursor:pointer;border-radius:var(--r-sm);margin:1px 6px;transition:all var(--tr);font-size:12.5px;color:var(--text2);white-space:nowrap;position:relative}
+.ni:hover{background:var(--surface2);color:var(--text)}
+.ni.act{background:var(--surface2);color:var(--text);font-weight:600}
+.ni.act::before{content:'';position:absolute;left:0;top:20%;height:60%;width:2px;background:var(--red);border-radius:1px}
+.ni-ic{display:none}
+
+.lb{flex:1}
+.bdg{background:var(--washi);color:var(--text2);font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600}
+.sf{padding:12px;border-top:1px solid var(--border);display:flex;gap:5px}
+.sfb{flex:1;padding:6px;border:1px solid var(--border);background:none;border-radius:var(--r-sm);cursor:pointer;font-size:11px;color:var(--text2);transition:all var(--tr);text-align:center;font-family:inherit;font-weight:500}
+.sfb:hover{background:var(--surface2);border-color:var(--border2);color:var(--text)}
+
+
+
+[data-theme="night"] .dash-banner-overlay{background:linear-gradient(135deg, rgba(28,28,34,.96) 0%, rgba(28,28,34,.88) 50%, rgba(28,28,34,.7) 100%)}
+[data-theme="night"] .dash-banner-img{opacity:.18}
+
+[data-theme="night"] .bp{background:var(--red);color:#fff}
+[data-theme="night"] .bp:hover{background:var(--red-dk)}
+[data-theme="night"] .est{color:var(--text2)}
+[data-theme="night"] .esi{color:var(--border2)}
+
+
+/* ─── COUNTDOWN WIDGET ─── */
+.cw-widget{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 12px}
+.cw-label{font-size:11px;color:var(--text3);font-weight:500;white-space:nowrap}
+.cw-date-input{border:none;background:none;color:var(--text);font-size:12px;font-weight:600;font-family:inherit;outline:none;cursor:pointer;width:118px}
+.cw-badge{background:var(--red);color:#fff;border-radius:12px;padding:2px 10px;font-size:12px;font-weight:700;font-family:'Shippori Mincho',serif;white-space:nowrap}
+
+/* ─── TOPBAR ─── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.tb{height:52px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:10px;padding:0 20px;flex-shrink:0}
+.tb-title{font-size:13.5px;font-weight:600;color:var(--text);letter-spacing:.01em}
+.tb-sep{width:1px;height:18px;background:var(--border);margin:0 2px}
+.tb-sp{flex:1}
+.srch{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1.5px solid var(--border);border-radius:20px;padding:6px 14px;transition:all var(--tr);width:210px;position:relative}
+.srch:focus-within{border-color:var(--red-mid);background:var(--surface);box-shadow:0 0 0 3px var(--red-lt)}
+.srch input{border:none;background:none;font-size:12.5px;color:var(--text);width:100%;outline:none;font-family:inherit}
+.srch input::placeholder{color:var(--text3)}
+.sr{position:absolute;top:38px;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh-md);z-index:200;max-height:280px;overflow-y:auto;display:none}
+.sr.op{display:block;animation:fi .15s ease}
+.sri{padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:background var(--tr);font-size:12.5px;border-bottom:1px solid var(--border)}
+.sri:last-child{border-bottom:none}
+.sri:hover{background:var(--surface2)}
+
+.tbtn{padding:5px 12px;border:1.5px solid var(--border);background:none;border-radius:20px;cursor:pointer;font-size:12px;color:var(--text2);transition:all var(--tr);font-family:inherit;font-weight:500}
+.tbtn:hover{background:var(--surface2);border-color:var(--border2);color:var(--text)}
+.tbtn-red{border-color:var(--red);color:#fff;background:var(--red);font-weight:600}
+.tbtn-red:hover{background:var(--red-dk);border-color:var(--red-dk)}
+
+/* ─── PAGES ─── */
+.pg{display:none;flex:1;overflow-y:auto;padding:28px 32px;animation:fi .2s ease}
+.pg.act{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.ph{margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+.pt{font-family:'Shippori Mincho',serif;font-size:24px;font-weight:600;color:var(--ink);margin-bottom:5px;letter-spacing:.01em}
+.ps{color:var(--text3);font-size:12.5px;letter-spacing:.02em}
+
+/* ─── BUTTONS ─── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all var(--tr);font-family:inherit;letter-spacing:.03em}
+.btn:active{transform:scale(.97)}
+.bp{background:var(--ink);color:var(--bg)}.bp:hover{background:var(--sumi)}
+.bs{background:none;color:var(--text2);border:1.5px solid var(--border)}.bs:hover{background:var(--surface2);border-color:var(--border2);color:var(--text)}
+.bred{background:var(--red);color:#fff}.bred:hover{background:var(--red-dk)}
+.bred-lt{background:var(--red-lt);color:var(--red);border:1.5px solid var(--red-mid)}.bred-lt:hover{background:var(--red);color:#fff}
+.bgold{background:var(--gold-lt);color:var(--gold-dk);border:1.5px solid var(--gold)}.bgold:hover{background:var(--gold);color:#fff}
+.bmoss{background:var(--moss-lt);color:var(--moss);border:1.5px solid var(--moss-mid)}.bmoss:hover{background:var(--moss);color:#fff}
+.bsm{padding:4px 10px;font-size:11px}
+
+/* ─── CARDS ─── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;transition:box-shadow var(--tr),transform var(--tr)}
+.card:hover{box-shadow:var(--sh-md);transform:translateY(-1px)}
+.cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+
+
+
+/* ─── DASHBOARD SECTIONS ─── */
+.dash-section-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px}
+
+/* ─── DASHBOARD HERO ─── */
+.dash-banner{position:relative;border-radius:var(--r-lg);overflow:hidden;margin-bottom:28px;min-height:300px;display:flex;flex-direction:column;justify-content:flex-end;background:var(--washi)}
+.dash-banner-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.22;transition:opacity .4s}
+.dash-banner-overlay{position:absolute;inset:0;background:linear-gradient(135deg, rgba(248,244,240,.96) 0%, rgba(248,244,240,.85) 50%, rgba(248,244,240,.6) 100%)}
+.dash-banner-body{position:relative;z-index:1;padding:36px 40px;display:flex;align-items:flex-start;justify-content:space-between;gap:32px}
+.dash-banner-left{flex:1;max-width:640px}
+.dash-banner-tag{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--red);margin-bottom:12px}
+.dash-banner-title{font-family:'Shippori Mincho',serif;font-size:38px;font-weight:600;color:var(--ink);line-height:1.1;margin-bottom:16px;letter-spacing:.01em}
+
+.dash-banner-intro{font-size:13.5px;color:var(--text2);line-height:1.8;margin-bottom:0}
+.dash-banner-right{flex-shrink:0;text-align:center;padding-top:6px}
+
+.dash-hero{display:none}
+.dash-hero-title,.dash-hero-sub,.dash-hero-countdown{display:none}
+
+/* ─── DASHBOARD ─── */
+.sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:12px;margin-bottom:24px}
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;transition:all var(--tr);cursor:default;position:relative;overflow:hidden}
+.sc::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0}
+.sc:hover{box-shadow:var(--sh-md);transform:translateY(-2px)}
+.sc-1::after{background:#C0392B}
+.sc-2::after{background:#C8A050}
+.sc-3::after{background:#2A5898}
+.sc-4::after{background:#2A7A6A}
+.sc-5::after{background:#7A5A9A}
+.sc-6::after{background:#B07840}
+.si0{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px}
+.sv{font-size:22px;font-weight:700;color:var(--ink);margin-bottom:2px;font-family:'Shippori Mincho',serif}
+.slb{font-size:11px;color:var(--text2)}
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.sec-t{font-size:10px;font-weight:700;color:var(--text2);letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--border)}
+
+/* ─── IDEAS ─── */
+.itb{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+.fsel{padding:6px 12px;border:1.5px solid var(--border);border-radius:20px;background:var(--surface);color:var(--text);font-size:12px;cursor:pointer;outline:none;font-family:inherit;font-weight:500;transition:all var(--tr);-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239C948A' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:26px}
+.fsel:focus{border-color:var(--red-mid);box-shadow:0 0 0 3px var(--red-lt)}
+.ic0{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;transition:all var(--tr);position:relative;overflow:hidden;border-top:3px solid var(--cc,var(--border2))}
+.ic0:hover{box-shadow:var(--sh-md);transform:translateY(-2px)}
+.ich{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.ict{font-weight:600;font-size:13.5px;flex:1;margin-right:8px;color:var(--ink);line-height:1.3}
+.icc{font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;white-space:nowrap;letter-spacing:.08em;text-transform:uppercase;background:var(--surface2);color:var(--text3)}
+.icd{font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.icm{display:flex;gap:8px;flex-wrap:wrap}
+.itg{font-size:11px;color:var(--text3)}
+.ica{display:flex;gap:5px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);flex-wrap:wrap}
+.pb{display:inline-flex;align-items:center;font-size:10px;font-weight:700;margin-top:6px;letter-spacing:.06em;text-transform:uppercase}
+.ph2{color:var(--red);font-weight:700}.pm{color:var(--text2)}.pl{color:var(--text3)}
+
+/* ─── MODAL ─── */
+.mb{display:none;position:fixed;inset:0;background:rgba(28,24,20,.4);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.mb.op{display:flex;animation:fb .18s ease}
+@keyframes fb{from{opacity:0}to{opacity:1}}
+.md{background:var(--surface);border-radius:var(--r-lg);padding:28px;width:90%;max-width:560px;max-height:87vh;overflow-y:auto;box-shadow:var(--sh-lg);animation:su .2s cubic-bezier(.4,0,.2,1);border:1px solid var(--border)}
+@keyframes su{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;padding-bottom:16px;border-bottom:2px solid var(--red-lt)}
+.mt0{font-family:'Shippori Mincho',serif;font-size:18px;font-weight:600;color:var(--ink)}
+.mc{background:none;border:none;cursor:pointer;font-size:16px;color:var(--text3);padding:4px 8px;border-radius:var(--r-sm);transition:all var(--tr);line-height:1;font-weight:300}
+.mc:hover{background:var(--surface2);color:var(--text)}
+.fg{margin-bottom:14px}
+.fl{display:block;font-size:10px;font-weight:700;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em}
+.fi,.fta,.fse{width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:12.5px;font-family:inherit;outline:none;transition:all var(--tr)}
+.fi:focus,.fta:focus,.fse:focus{border-color:var(--red-mid);box-shadow:0 0 0 3px var(--red-lt)}
+.fta{resize:vertical;min-height:70px;line-height:1.6}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fa{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+
+/* ─── PLANNING ─── */
+.db{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:12px;overflow:hidden;transition:all var(--tr)}
+.db:hover{box-shadow:var(--sh)}
+.dh{display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--surface2);border-bottom:1px solid var(--border);cursor:pointer;transition:background var(--tr)}
+.dh:hover{background:var(--surface2)}
+.dn{width:28px;height:28px;border-radius:6px;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;font-family:'Shippori Mincho',serif}
+.dt{font-weight:600;flex:1;font-size:13px;color:var(--ink)}.dm{font-size:11px;color:var(--text3)}
+.dy{padding:10px;display:flex;flex-direction:column;gap:7px;min-height:38px}
+.ai{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--washi-lt);border:1px solid var(--border);border-radius:var(--r-sm);cursor:grab;transition:all var(--tr)}
+.ai:hover{background:var(--surface);box-shadow:var(--sh);border-color:var(--border2)}
+.ai.dg0{opacity:.35;cursor:grabbing}
+.acd{width:3px;height:30px;border-radius:2px;flex-shrink:0}
+.ain{flex:1;min-width:0}
+.an{font-weight:500;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+.ad{font-size:11px;color:var(--text3);margin-top:2px}
+.ac{font-size:11px;color:var(--moss);font-weight:600;white-space:nowrap}
+.aa{display:flex;gap:3px;opacity:0;transition:opacity var(--tr)}
+.ai:hover .aa{opacity:1}
+.ib{background:none;border:none;cursor:pointer;padding:4px 6px;border-radius:4px;font-size:11px;color:var(--text3);transition:all var(--tr);font-family:inherit;font-weight:500}
+.ib:hover{background:var(--surface2);color:var(--text)}
+.dz{border:1.5px dashed var(--border2);border-radius:var(--r-sm);padding:10px;text-align:center;font-size:11px;color:var(--text3);transition:all var(--tr)}
+.dz.dov{border-color:var(--red-mid);background:var(--red-lt);color:var(--red)}
+.drag-handle{color:var(--border2);font-size:14px;cursor:grab;user-select:none;transition:color var(--tr)}
+.ai:hover .drag-handle{color:var(--text3)}
+/* Tactile : pas de survol → actions toujours visibles, drag remplacé par ↑↓ */
+@media(hover:none){
+  .aa{opacity:1}
+  .drag-handle{display:none}
+}
+
+/* ─── BUDGET ─── */
+.bov{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px}
+.bst{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;border-left:4px solid var(--border2)}
+.bsl{font-size:10px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.1em;font-weight:700}
+.bsv{font-size:20px;font-weight:700;color:var(--ink);font-family:'Shippori Mincho',serif}
+.bta{width:100%;border-collapse:collapse}
+.bta th{text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;padding:8px 12px;border-bottom:2px solid var(--border)}
+.bta td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:12.5px}
+.bta tr:hover td{background:var(--surface2)}
+.bb{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:8px}
+.bbf{height:100%;border-radius:2px;transition:width .7s cubic-bezier(.4,0,.2,1)}
+
+/* ─── TABS ─── */
+.tabs{display:flex;gap:0;margin-bottom:22px;border-bottom:2px solid var(--border);padding-bottom:0;background:linear-gradient(180deg,var(--washi-lt) 0%,transparent 100%);border-radius:var(--r-sm) var(--r-sm) 0 0;padding-top:4px}
+.tab{padding:9px 18px;border:none;background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--text3);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all var(--tr);font-family:inherit;letter-spacing:.04em;text-transform:uppercase}
+.tab:hover{color:var(--text2)}.tab.act{color:var(--red);border-bottom-color:var(--red)}
+.tc{display:none}.tc.act{display:block}
+
+/* ─── TRANSPORT ─── */
+.tri{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--indigo);border-radius:var(--r);padding:14px 18px;margin-bottom:10px;display:grid;grid-template-columns:auto 1fr auto auto;gap:14px;align-items:center;transition:all var(--tr)}
+.tri:hover{box-shadow:var(--sh-md);border-left-color:var(--red)}
+.tri-ic{width:36px;height:36px;border-radius:8px;background:var(--indigo-lt);color:var(--indigo);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;letter-spacing:.04em}
+.trn{font-weight:600;font-size:13px;color:var(--ink)}.trd{font-size:11px;color:var(--text3);margin-top:2px}
+.trp{font-size:13px;font-weight:700;color:var(--moss)}
+.trb{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.trb-r{background:var(--moss-lt);color:var(--moss)}.trb-p{background:var(--gold-lt);color:var(--gold-dk)}
+
+/* ─── CHECKLIST ─── */
+.clg{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.clc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.clch{padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.clci{display:none}
+.clct{font-weight:600;font-size:13px;flex:1;color:var(--ink)}.clcp{font-size:11px;color:var(--text3);font-weight:600}
+.clb{padding:8px 14px}
+.cli{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--border)}
+.cli:last-child{border-bottom:none}
+.cli input[type=checkbox]{width:15px;height:15px;accent-color:var(--red);cursor:pointer;flex-shrink:0}
+.cli label{font-size:12.5px;cursor:pointer;flex:1;transition:all var(--tr)}
+.cli input:checked+label{color:var(--text3);text-decoration:line-through}
+.cladd{display:flex;gap:6px;padding:8px 14px;border-top:1px solid var(--border)}
+.cladd input{flex:1;padding:5px 9px;border:1.5px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:12px;font-family:inherit;outline:none;transition:border-color var(--tr)}
+.cladd input:focus{border-color:var(--red-mid)}
+
+/* ─── NOTES ─── */
+.nl{display:grid;grid-template-columns:200px 1fr;gap:16px;height:calc(100vh - 175px)}
+.nls{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow-y:auto}
+.nli{padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:all var(--tr);position:relative}
+.nli:hover{background:var(--surface2)}
+.nli.act{background:var(--red-lt)}
+.nli.act::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--red)}
+.nlt{font-size:12.5px;font-weight:600;margin-bottom:3px;color:var(--ink)}.nlp{font-size:11px;color:var(--text3)}
+.ne{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden}
+.ntb{padding:8px 14px;border-bottom:1px solid var(--border);display:flex;gap:3px;align-items:center;flex-wrap:wrap;background:var(--surface2)}
+.ntbt{padding:4px 8px;border:none;background:none;cursor:pointer;border-radius:4px;font-size:12px;color:var(--text2);transition:all var(--tr);font-family:inherit;font-weight:500}
+.ntbt:hover{background:var(--surface);color:var(--text)}
+.ntbs{width:1px;height:16px;background:var(--border);margin:0 3px}
+.nti{width:100%;padding:16px 20px 0;font-size:20px;font-weight:700;border:none;background:none;color:var(--ink);font-family:'Shippori Mincho',serif;outline:none}
+
+/* ─── GALLERY ─── */
+.gg{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.gi{aspect-ratio:4/3;border-radius:var(--r-sm);overflow:hidden;background:var(--surface2);border:1px solid var(--border);cursor:pointer;transition:all var(--tr)}
+.gi:hover{transform:scale(1.02);box-shadow:var(--sh-md)}
+.gi img{width:100%;height:100%;object-fit:cover}
+
+/* ─── WEATHER ─── */
+.wg{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.wc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;text-align:center;transition:all var(--tr);border-top:3px solid var(--red-mid)}
+.wc:hover{box-shadow:var(--sh-md);transform:translateY(-2px)}
+.wcn{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:4px}
+.wcc{font-size:28px;font-weight:700;color:var(--ink);margin:10px 0 4px;font-family:'Shippori Mincho',serif}
+.wcd{font-size:12px;color:var(--text2);line-height:1.5}
+.wi{font-size:26px;margin:6px 0}
+
+/* ─── PROGRESS ─── */
+.prb{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.prf{height:100%;border-radius:3px;transition:width .7s cubic-bezier(.4,0,.2,1)}
+
+/* ─── OBJECTIVES ─── */
+.oi{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;transition:all var(--tr)}
+.oi:hover{box-shadow:var(--sh);border-color:var(--border2)}
+.ock{width:20px;height:20px;border-radius:50%;border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all var(--tr);font-size:10px;color:transparent}
+.oi.done .ock{background:var(--moss);border-color:var(--moss);color:#fff}
+.ot{flex:1;font-size:12.5px;color:var(--ink)}.oi.done .ot{color:var(--text3);text-decoration:line-through}
+
+/* ─── CALENDAR ─── */
+.cal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px}
+.calh{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-weight:600;font-size:13px;font-family:'Shippori Mincho',serif;color:var(--ink)}
+.calg{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cald{text-align:center;padding:5px 3px;font-size:11px;border-radius:4px;cursor:pointer;transition:all var(--tr);color:var(--text2)}
+.cald:hover{background:var(--surface2)}.cald.tod{background:var(--red);color:#fff;font-weight:700}.cald.om{color:var(--border2)}
+.cald.trip{background:var(--red-lt);color:var(--red);font-weight:600}
+.caldn{font-size:10px;color:var(--text3);text-align:center;padding:3px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+
+/* ─── SEARCH WRAPPER ─── */
+.swrap{position:relative}
+
+
+
+
+/* ─── INSERTION JOUR ─── */
+.day-insert-btn{
+  display:flex;align-items:center;justify-content:center;
+  margin:-4px 0 8px 0;padding:5px;cursor:pointer;
+  opacity:0;transition:opacity var(--tr);
+  color:var(--text3);font-size:11px;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+  gap:6px;
+}
+.day-insert-btn::before,.day-insert-btn::after{
+  content:'';flex:1;height:1px;background:var(--border);
+}
+.day-insert-btn:hover{opacity:1 !important;color:var(--red)}
+.day-insert-btn:hover::before,.day-insert-btn:hover::after{background:var(--red)}
+#planEl:hover .day-insert-btn{opacity:.4}
+
+/* ─── CARTE ─── */
+#pg-map{display:none;flex-direction:column}
+#pg-map.act{display:flex !important}
+.leaflet-container{font-family:'Inter',sans-serif}
+.map-popup{font-family:'Inter',sans-serif;min-width:180px}
+.map-popup-title{font-family:'Shippori Mincho',serif;font-size:14px;font-weight:600;color:#1C1814;margin-bottom:4px}
+.map-popup-cat{font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:6px}
+.map-popup-desc{font-size:12px;color:#5C5248;line-height:1.5;margin-bottom:6px}
+.map-popup-meta{font-size:11px;color:#9C948A;display:flex;gap:8px;flex-wrap:wrap}
+.map-popup-link{display:inline-block;margin-top:7px;font-size:11px;font-weight:600;color:#C0392B;text-decoration:none;letter-spacing:.04em;text-transform:uppercase}
+.map-marker{width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center}
+.map-marker-inner{transform:rotate(45deg);font-size:11px;font-weight:700;color:#fff}
+
+/* ─── CARNET ─── */
+.carnet-day{margin-bottom:36px;position:relative}
+.carnet-day-header{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.carnet-day-num{font-family:'Shippori Mincho',serif;font-size:13px;font-weight:600;color:var(--red);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.carnet-day-title{font-family:'Shippori Mincho',serif;font-size:18px;font-weight:600;color:var(--ink)}
+.carnet-day-city{font-size:12px;color:var(--text3);margin-top:2px}
+.carnet-day-line{flex:1;height:1px;background:var(--border)}
+.carnet-acts{display:flex;flex-direction:column;gap:0;padding-left:24px;border-left:2px solid var(--border);margin-left:6px}
+.carnet-act{position:relative;padding:12px 0 12px 20px}
+.carnet-act::before{content:'';position:absolute;left:-5px;top:20px;width:8px;height:8px;border-radius:50%;background:var(--surface);border:2px solid var(--border2)}
+.carnet-act:first-child::before{border-color:var(--red);background:var(--red)}
+.carnet-act-time{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
+.carnet-act-name{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:3px}
+.carnet-act-meta{font-size:12px;color:var(--text3);display:flex;gap:10px;flex-wrap:wrap}
+.carnet-act-notes{font-size:12.5px;color:var(--text2);margin-top:5px;font-style:italic;line-height:1.6;white-space:pre-line}
+.carnet-empty{text-align:center;padding:60px 20px;color:var(--text3)}
+.carnet-empty-title{font-family:'Shippori Mincho',serif;font-size:18px;color:var(--text2);margin-bottom:8px}
+.carnet-day-total{font-size:11px;color:var(--text3);font-weight:500;margin-top:8px;padding-left:44px}
+
+/* ─── CONVERTER ─── */
+.cv{max-width:400px;margin:0 auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:28px}
+.cvd{font-size:28px;font-weight:700;text-align:center;padding:18px;margin:14px 0;background:var(--washi-lt);border-radius:var(--r);color:var(--ink);font-family:'Shippori Mincho',serif;border:1px solid var(--border)}
+.cvi{display:flex;gap:10px;margin-bottom:16px;align-items:flex-end}
+.cvi>div{flex:1;display:flex;flex-direction:column;gap:5px}
+.cvi label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em}
+.cvi input{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:15px;font-weight:600;text-align:center;color:var(--ink);background:var(--surface);font-family:'Shippori Mincho',serif;outline:none;transition:all var(--tr)}
+.cvi input:focus{border-color:var(--red-mid);box-shadow:0 0 0 3px var(--red-lt)}
+.cvi-sep{display:flex;align-items:flex-end;padding-bottom:10px;color:var(--text3);font-size:18px;font-weight:300}
+
+/* ─── TOAST ─── */
+#tc{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:7px}
+.tst{background:var(--ink);color:#fff;padding:11px 18px;border-radius:20px;font-size:12.5px;box-shadow:var(--sh-lg);animation:ti .22s cubic-bezier(.4,0,.2,1);font-weight:500;letter-spacing:.02em}
+@keyframes ti{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+.ts{background:var(--moss)}.te{background:var(--red)}
+
+/* ─── EMPTY ─── */
+.es{text-align:center;padding:60px 20px;color:var(--text3)}
+.esi{font-size:14px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--border2);margin-bottom:14px}
+.est{font-size:15px;font-weight:600;color:var(--text2);margin-bottom:6px;font-family:'Shippori Mincho',serif}
+
+/* ─── MISC ─── */
+.div{height:1px;background:var(--border);margin:18px 0}
+.tm{color:var(--text3)}.tsm{font-size:11.5px}
+.mt8{margin-top:8px}.mt16{margin-top:16px}.mb16{margin-bottom:16px}
+
+/* ─── HOME (MES VOYAGES) ─── */
+#home{display:none;flex:1;overflow-y:auto;background:var(--bg)}
+body.home #home{display:block}
+body.home #sb,body.home #main{display:none}
+.home-wrap{max-width:1080px;margin:0 auto;padding:48px 32px}
+.home-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:32px;padding-bottom:24px;border-bottom:1px solid var(--border)}
+.home-tag{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--red);margin-bottom:10px}
+.home-title{font-family:'Shippori Mincho',serif;font-size:36px;font-weight:600;color:var(--ink);letter-spacing:.01em}
+.home-sub{color:var(--text3);font-size:13px;margin-top:6px}
+.trips-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.trip-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;cursor:pointer;transition:all var(--tr);display:flex;flex-direction:column}
+.trip-card:hover{box-shadow:var(--sh-lg);transform:translateY(-3px)}
+.trip-cover{position:relative;height:150px;background:var(--washi);overflow:hidden;flex-shrink:0}
+.trip-cover img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
+.trip-card:hover .trip-cover img{transform:scale(1.04)}
+.trip-glyph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Shippori Mincho',serif;font-size:44px;color:var(--washi-dk)}
+.trip-cd{position:absolute;top:12px;right:12px;background:var(--red);color:#fff;border-radius:12px;padding:3px 12px;font-size:12px;font-weight:700;font-family:'Shippori Mincho',serif;box-shadow:var(--sh-md);z-index:2}
+.trip-body{padding:16px 18px 14px;flex:1;display:flex;flex-direction:column}
+.trip-name{font-family:'Shippori Mincho',serif;font-size:17px;font-weight:600;color:var(--ink);margin-bottom:3px}
+.trip-meta{font-size:12px;color:var(--text3);margin-bottom:12px}
+.trip-stats{display:flex;gap:14px;font-size:11.5px;color:var(--text2)}
+.trip-stats b{color:var(--ink)}
+.trip-actions{display:flex;gap:6px;margin-top:auto;padding-top:12px;border-top:1px solid var(--border)}
+.trip-new{border:1.5px dashed var(--border2);border-radius:var(--r-lg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:280px;cursor:pointer;color:var(--text3);transition:all var(--tr);background:none}
+.trip-new:hover{border-color:var(--red-mid);color:var(--red);background:var(--red-lt)}
+.trip-new-plus{font-size:30px;font-weight:300;line-height:1}
+@media(max-width:768px){.home-wrap{padding:28px 16px}.home-title{font-size:26px}.home-head{flex-direction:column;align-items:flex-start}}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:768px){
+  #sb{position:fixed;height:100vh;transform:translateX(-100%)}
+  #sb.mob{transform:translateX(0)}
+  .pg{padding:16px}
+  .dash-banner{min-height:auto}
+  .dash-banner-title{font-size:24px}
+  .dash-banner-body{flex-direction:column;gap:20px;padding:22px}
+  .dash-banner-right{align-self:flex-start}
+  .sg{grid-template-columns:1fr 1fr}
+  .cg{grid-template-columns:1fr}
+  .nl{grid-template-columns:1fr}
+  .fr{grid-template-columns:1fr}
+  .dg{grid-template-columns:1fr}
+  .bov{grid-template-columns:1fr 1fr}
+}
+
 </style>
 </head>
-<body>
-<div class="spin"></div>
-<div>Chargement de Mes Voyages&hellip;</div>
+<body class="home">
+<div id="home">
+  <div class="home-wrap">
+    <div class="home-head">
+      <div>
+        <div class="home-tag">Carnet de voyages</div>
+        <div class="home-title">Mes Voyages</div>
+        <div class="home-sub">Planifiez tous vos voyages &mdash; un tableau de bord par destination</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn bs" onclick="exportBackup()" title="T&#233;l&#233;charger une sauvegarde de tous les voyages">Exporter</button>
+        <button class="btn bs" onclick="document.getElementById('importFile').click()" title="Restaurer une sauvegarde">Importer</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importBackup(event)">
+        <button class="btn bs" id="thbtn-home" onclick="toggleTheme()">Nuit</button>
+        <button class="btn bred" onclick="showTripModal()">+ Nouveau voyage</button>
+      </div>
+    </div>
+    <div class="trips-grid" id="tripsGrid"></div>
+  </div>
+</div>
+<nav id="sb">
+  <div class="sh">
+    <div class="sl0" id="sb-glyph">日</div>
+    <div class="sl" id="sb-name">Mon Voyage<span>&nbsp;</span></div>
+    <button class="scb" id="stg">&#8249;</button>
+  </div>
+  <div class="sn">
+    <div class="ni" onclick="goHome()" title="Retour à mes voyages" style="color:var(--red);font-weight:600"><span class="ni-ic" style="display:block">&#8592;</span><span class="lb">Mes voyages</span></div>
+    <div class="ni act" data-p="dashboard"><span class="ni-ic">db</span><span class="lb">Tableau de bord</span></div>
+
+    <div class="ss open" id="s-ideas">
+      <div class="ssh" onclick="tss('s-ideas')"><span class="st">Idées</span><span class="sa">&#9658;</span></div>
+      <div class="si">
+        <div class="ni" data-p="ideas" data-cat=""><span class="ni-ic">all</span><span class="lb">Toutes les idées</span><span class="bdg" id="bdg-ideas">0</span></div>
+        <div class="ni" data-p="ideas" data-cat="restaurant"><span class="ni-ic">res</span><span class="lb">Restaurants</span></div>
+        <div class="ni" data-p="ideas" data-cat="temple"><span class="ni-ic">tem</span><span class="lb">Temples</span></div>
+        <div class="ni" data-p="ideas" data-cat="hotel"><span class="ni-ic">hot</span><span class="lb">H&#244;tels</span></div>
+        <div class="ni" data-p="ideas" data-cat="activite"><span class="ni-ic">act</span><span class="lb">Activit&#233;s</span></div>
+        <div class="ni" data-p="ideas" data-cat="lieux"><span class="ni-ic">lx</span><span class="lb">Lieux</span></div>
+        <div class="ni" data-p="ideas" data-cat="musee"><span class="ni-ic">exc</span><span class="lb">Excursions</span></div>
+        <div class="ni" data-p="ideas" data-cat="shopping"><span class="ni-ic">shp</span><span class="lb">Shopping</span></div>
+        <div class="ni" data-p="ideas" data-cat="nature"><span class="ni-ic">nat</span><span class="lb">Nature</span></div>
+        <div class="ni" data-p="ideas" data-cat="ville"><span class="ni-ic">vil</span><span class="lb">Villes</span></div>
+        <div class="ni" data-p="ideas" data-cat="pdv"><span class="ni-ic">pdv</span><span class="lb">Points de vue</span></div>
+      </div>
+    </div>
+
+    <div class="ss open" id="s-voyage">
+      <div class="ssh" onclick="tss('s-voyage')"><span class="st">Voyage</span><span class="sa">&#9658;</span></div>
+      <div class="si">
+        <div class="ni" data-p="planning"><span class="ni-ic">cal</span><span class="lb">Planning</span></div>
+        <div class="ni" data-p="budget"><span class="ni-ic">bud</span><span class="lb">Budget</span></div>
+        <div class="ni" data-p="transport"><span class="ni-ic">tra</span><span class="lb">Transport</span></div>
+        <div class="ni" data-p="carnet"><span class="ni-ic">crn</span><span class="lb">Carnet de voyage</span></div>
+        <div class="ni" data-p="checklist"><span class="ni-ic">chk</span><span class="lb">Checklist</span></div>
+        <div class="ni" data-p="weather"><span class="ni-ic">met</span><span class="lb">Météo</span></div>
+      </div>
+    </div>
+
+    <div class="ss open" id="s-notes">
+      <div class="ssh" onclick="tss('s-notes')"><span class="st">Notes &amp; M&#233;dias</span><span class="sa">&#9658;</span></div>
+      <div class="si">
+        <div class="ni" data-p="notes"><span class="ni-ic">jnl</span><span class="lb">Journal</span></div>
+
+      </div>
+    </div>
+
+    <div class="ss open" id="s-tools">
+      <div class="ssh" onclick="tss('s-tools')"><span class="st">Outils</span><span class="sa">&#9658;</span></div>
+      <div class="si">
+        <div class="ni" data-p="map"><span class="ni-ic">map</span><span class="lb">Carte interactive</span></div>
+    <div class="ni" data-p="converter"><span class="ni-ic">yen</span><span class="lb">Convertisseur</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sf">
+    <button class="sfb" onclick="downloadCarnet()" title="Télécharger le carnet de voyage">Télécharger</button>
+    <button class="sfb" id="thbtn" onclick="toggleTheme()">Nuit</button>
+  </div>
+</nav>
+
+<div id="main">
+  <header class="tb">
+    <button class="tbtn" id="mbb" style="display:none" onclick="toggleMob()">Menu</button>
+    <span class="tb-title" id="tbt">Tableau de bord</span>
+    <div class="tb-sp"></div>
+    <div class="cw-widget">
+      <span class="cw-label">Départ :</span>
+      <input type="date" id="depDateInput" class="cw-date-input" value="2027-10-01" onchange="updateCountdown(this.value)">
+      <span class="cw-badge" id="cdwBadge">J-???</span>
+    </div>
+    <div class="swrap">
+      <div class="srch">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--text3);flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" placeholder="Rechercher..." id="gs" oninput="handleSearch(this.value)" onfocus="showSR()" onblur="setTimeout(hideSR,200)">
+      </div>
+      <div class="sr" id="sr0"></div>
+    </div>
+    <button class="tbtn tbtn-red" onclick="showAddIdea()">+ Ajouter une id&#233;e</button>
+  </header>
+
+  <!-- DASHBOARD -->
+  <div class="pg act" id="pg-dashboard" style="padding:0;overflow-y:auto">
+
+    <!-- BANNIÈRE PRINCIPALE -->
+    <div class="dash-banner">
+      <img class="dash-banner-img" id="bn-img"
+        src=""
+        alt=""
+        onerror="this.style.display='none'">
+      <div class="dash-banner-overlay"></div>
+      <div class="dash-banner-body">
+        <div class="dash-banner-left">
+          <div class="dash-banner-tag" id="bn-tag">Mon voyage</div>
+          <div class="dash-banner-title" id="bn-title">Mon Voyage</div>
+          <div class="dash-banner-intro" id="bn-intro"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- STATS + CONTENU -->
+    <div style="padding:0 28px 28px">
+      <div class="sg" id="dsh-stats"></div>
+      <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:24px">
+        <!-- COL GAUCHE -->
+        <div style="display:flex;flex-direction:column;gap:24px">
+          <div class="dash-section-card">
+            <div class="sec-t">Calendrier</div>
+            <div class="cal" id="calEl"></div>
+          </div>
+          <div class="dash-section-card">
+            <div class="sec-t">Progression du voyage</div>
+            <div id="dsh-prog"></div>
+          </div>
+        </div>
+        <!-- COL DROITE -->
+        <div style="display:flex;flex-direction:column;gap:24px">
+          <div class="dash-section-card">
+            <div class="sec-t">Idées favorites</div>
+            <div id="dsh-fav"></div>
+          </div>
+          <div class="dash-section-card">
+            <div class="sec-t">Budget par catégorie</div>
+            <div id="dsh-bud"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IDEAS -->
+  <div class="pg" id="pg-ideas">
+    <div class="ph">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div class="pt">Mes id&#233;es</div><div class="ps">Toutes vos envies pour le Japon &mdash; jusqu&#39;&#224; 400 id&#233;es</div></div>
+        <button class="btn bp" onclick="showAddIdea()">+ Nouvelle id&#233;e</button>
+      </div>
+    </div>
+    <div class="itb">
+      <select class="fsel" id="fcat" onchange="renderIdeas()">
+        <option value="">Toutes cat&#233;gories</option>
+        <option value="restaurant">Restaurant</option>
+        <option value="temple">Temple</option>
+        <option value="hotel">H&#244;tel</option>
+        <option value="activite">Activit&#233;</option>
+        <option value="lieux">Lieux</option>
+        <option value="musee">Excursion</option>
+        <option value="shopping">Shopping</option>
+        <option value="nature">Nature</option>
+        <option value="ville">Ville</option>
+        <option value="pdv">Point de vue</option>
+        <option value="autre">Autre</option>
+      </select>
+      <select class="fsel" id="fpri" onchange="renderIdeas()">
+        <option value="">Toutes priorit&#233;s</option>
+        <option value="haute">Haute priorit&#233;</option>
+        <option value="moyenne">Moyenne</option>
+        <option value="basse">Basse</option>
+      </select>
+      <select class="fsel" id="fsrt" onchange="renderIdeas()">
+        <option value="date">Plus r&#233;cents</option>
+        <option value="alpha">A &#8594; Z</option>
+        <option value="cout">Co&#251;t &#8593;</option>
+        <option value="prio">Priorit&#233;</option>
+      </select>
+      <button class="btn bs bsm" onclick="toggleFav()" id="favbtn">Favoris</button>
+      <input type="text" class="fsel" id="scity" placeholder="Filtrer par ville..." oninput="renderIdeas()" style="max-width:160px">
+    </div>
+    <div class="cg" id="ig"></div>
+  </div>
+
+  <!-- PLANNING -->
+  <div class="pg" id="pg-planning">
+    <div class="ph">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div class="pt">Planning</div><div class="ps">Organisez vos journ&#233;es &mdash; glissez-d&#233;posez les activit&#233;s</div></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:5px 12px">
+            <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">D&#233;part</span>
+            <input type="date" id="depDate" style="border:none;background:none;color:var(--ink);font-size:12px;font-family:inherit;font-weight:600;outline:none;cursor:pointer" onchange="updateDep(this.value)">
+          </div>
+          <button class="btn bs" onclick="addDay()">+ Jour</button>
+          <button class="btn bred-lt" onclick="showAddAct()">+ Activit&#233;</button>
+        </div>
+      </div>
+    </div>
+    <div id="planEl"></div>
+  </div>
+
+  <!-- BUDGET -->
+  <div class="pg" id="pg-budget">
+    <div class="ph">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div class="pt">Budget</div><div class="ps">G&#233;rez vos d&#233;penses en temps r&#233;el</div></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:5px 12px">
+            <span style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.06em;text-transform:uppercase">Cible</span>
+            <input type="number" id="tbinp" style="width:80px;border:none;background:none;color:var(--ink);font-size:12px;font-family:inherit;font-weight:700;outline:none" placeholder="&#8364;" onchange="setTotalBudget(this.value)">
+          </div>
+          <button class="btn bp" onclick="showAddBudget()">+ D&#233;pense</button>
+        </div>
+      </div>
+    </div>
+    <div class="bov" id="bov"></div>
+    <div class="tabs">
+      <button class="tab act" onclick="swTab('bt','table',this)">Tableau</button>
+      <button class="tab" onclick="swTab('bt','chart',this)">Graphique</button>
+    </div>
+    <div class="tc act" id="bt-table"><table class="bta"><thead><tr><th>Cat&#233;gorie</th><th>Description</th><th>Date</th><th>Montant</th><th></th></tr></thead><tbody id="btb"></tbody></table></div>
+    <div class="tc" id="bt-chart"><div id="bch" style="padding:18px 0"></div></div>
+  </div>
+
+  <!-- TRANSPORT -->
+  <div class="pg" id="pg-transport">
+    <div class="ph">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div class="pt">Transport</div><div class="ps">Train, m&#233;tro, bus, avion &mdash; tous vos trajets</div></div>
+        <button class="btn bp" onclick="showAddTr()">+ Trajet</button>
+      </div>
+    </div>
+    <div id="trEl"></div>
+  </div>
+
+
+
+
+
+  <!-- NOTES -->
+  <div class="pg" id="pg-notes">
+    <div class="ph">
+      <div style="display:flex;justify-content:space-between">
+        <div><div class="pt">Journal &amp; Notes</div><div class="ps">Vos notes, conseils et souvenirs</div></div>
+        <button class="btn bp" onclick="addNote()">+ Note</button>
+      </div>
+    </div>
+    <div class="nl">
+      <div class="nls" id="nlEl"></div>
+      <div class="ne">
+        <div class="ntb">
+          <button class="ntbt" onclick="nf('bold')"><b>G</b></button>
+          <button class="ntbt" onclick="nf('italic')"><i>I</i></button>
+          <button class="ntbt" onclick="nf('underline')"><u>S</u></button>
+          <span class="ntbs"></span>
+          <button class="ntbt" onclick="nf('insertUnorderedList')">Liste</button>
+          <button class="ntbt" onclick="nf('insertOrderedList')">Liste num.</button>
+          <span class="ntbs"></span>
+          <button class="ntbt" onclick="delNote()" style="color:var(--red)">Supprimer</button>
+        </div>
+        <input type="text" id="nti0" class="nti" placeholder="Titre de la note..." oninput="saveNote()">
+        <div id="nce" contenteditable="true" style="flex:1;padding:14px 20px;outline:none;overflow-y:auto;line-height:1.75;font-size:13.5px;color:var(--text)" oninput="saveNote()"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GALLERY -->
+  <!-- CARTE -->
+  <div class="pg" id="pg-map" style="padding:0;overflow:hidden;height:calc(100vh - 52px);display:none;flex-direction:column;position:relative">
+    <div id="map-topbar" style="padding:14px 24px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:14px;flex-shrink:0">
+      <div>
+        <div style="font-family:'Shippori Mincho',serif;font-size:16px;font-weight:600;color:var(--ink)">Carte interactive</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:1px">Vos idées avec coordonnées apparaissent ici</div>
+      </div>
+      <select class="fsel" id="mapModeSel" onchange="setMapMode(this.value)" style="margin-left:auto">
+        <option value="points">Tous les points</option>
+        <option value="route">Itin&#233;raire &amp; trajets</option>
+      </select>
+      <select class="fsel" id="mapDaySel" onchange="setMapDay(this.value)" style="display:none"></select>
+      <div id="map-legend" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+    </div>
+    <div id="leaflet-map" style="flex:1;width:100%;min-height:400px"></div>
+    <div id="route-summary" style="display:none;position:absolute;bottom:18px;left:12px;z-index:900;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh-lg);padding:14px 16px;max-width:340px;max-height:45%;overflow-y:auto;font-size:12px"></div>
+  </div>
+
+
+
+  
+  <!-- CARNET DE VOYAGE -->
+  <div class="pg" id="pg-carnet">
+    <div class="ph">
+      <div class="pt">Carnet de voyage</div>
+      <div class="ps">Votre itinéraire final, jour par jour</div>
+    </div>
+    <div id="carnetEl"></div>
+  </div>
+
+  <!-- CHECKLIST -->
+  <div class="pg" id="pg-checklist">
+    <div class="ph">
+      <div class="pt">Checklist</div>
+      <div class="ps">Tout ce qu&rsquo;il faut pr&#233;parer avant le d&#233;part</div>
+    </div>
+    <div class="clg" id="clEl"></div>
+  </div>
+
+  <!-- METEO -->
+  <div class="pg" id="pg-weather">
+    <div class="ph">
+      <div class="pt">Météo par étape</div>
+      <div class="ps">Prévisions cal&#233;es sur les dates et les villes de votre planning</div>
+    </div>
+    <div id="weatherEl"></div>
+  </div>
+
+  <!-- CONVERTER -->
+  <div class="pg" id="pg-converter">
+    <div class="ph"><div class="pt" id="cv-title">Convertisseur</div><div class="ps">Estimez vos d&#233;penses facilement</div></div>
+    <div class="cv">
+      <div class="cvi">
+        <div><label id="yi-label">Devise locale</label><input type="number" id="yi" placeholder="0" oninput="cvY()"></div>
+        <div class="cvi-sep">&harr;</div>
+        <div><label>Euro (EUR)</label><input type="number" id="ei" placeholder="0" oninput="cvE()"></div>
+      </div>
+      <div class="cvd" id="cvd">Entrez un montant</div>
+      <div style="text-align:center;font-size:11px;color:var(--text3);margin-bottom:20px" id="cv-rate-note">Taux approximatif</div>
+      <div class="div"></div>
+      <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:10px;text-transform:uppercase;letter-spacing:.1em">R&#233;f&#233;rences rapides</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px" id="qr"></div>
+    </div>
+  </div>
+
+
+</div>
+
+<!-- MODALS -->
+<div class="mb" id="m-idea">
+  <div class="md">
+    <div class="mh"><div class="mt0" id="midt">Nouvelle id&#233;e</div><button class="mc" onclick="cm('m-idea')">&#10005;</button></div>
+    <input type="hidden" id="iid">
+    <div class="fr">
+      <div class="fg"><label class="fl">Titre *</label><input class="fi" id="iti" placeholder="Ex : Fushimi Inari"></div>
+      <div class="fg"><label class="fl">Cat&#233;gorie</label><select class="fse" id="ica">
+        <option value="" disabled selected>Choisir une cat&#233;gorie...</option>
+        <option value="temple">Temple / Sanctuaire</option>
+        <option value="restaurant">Restaurant</option>
+        <option value="hotel">H&#244;tel / Ryokan</option>
+        <option value="activite">Activit&#233;</option>
+        <option value="lieux">Lieux</option>
+        <option value="musee">Excursion</option>
+        <option value="shopping">Shopping</option>
+        <option value="nature">Nature</option>
+        <option value="ville">Ville</option>
+        <option value="pdv">Point de vue</option>
+        <option value="autre">Autre</option>
+      </select></div>
+    </div>
+    <div class="fg"><label class="fl">Description</label><textarea class="fta" id="ide" placeholder="D&#233;crivez cette id&#233;e..."></textarea></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Ville</label><input class="fi" id="ici" placeholder="Ex : Milan" onchange="geocodeCity()"></div>
+      <div class="fg"><label class="fl">Adresse pr&#233;cise <span style="font-weight:400;text-transform:none;letter-spacing:0">(optionnel)</span></label><input class="fi" id="iaddr" placeholder="Ex : Via Dante 12" onchange="geocodeCity()"></div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin:-8px 0 12px">Les coordonn&#233;es se remplissent automatiquement &mdash; ajoutez une adresse pour un point pr&#233;cis sur la carte.</div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Co&#251;t estim&#233; (&#8364;)</label><input class="fi" type="number" id="ico" placeholder="0"></div>
+      <div class="fg"><label class="fl">Dur&#233;e</label><select class="fse" id="idu">
+        <option value="">&mdash;</option>
+        <option>30min</option><option>1h</option><option>1h30</option><option>2h</option>
+        <option>2h30</option><option>3h</option><option>4h</option>
+        <option>Demi-journ&#233;e</option><option>Journ&#233;e</option><option>Soir&#233;e</option>
+      </select></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Priorit&#233;</label><select class="fse" id="ipr"><option value="haute">Haute</option><option value="moyenne">Moyenne</option><option value="basse">Basse</option></select></div>
+      <div class="fg"><label class="fl">Note /5</label><input class="fi" type="number" id="irt" min="0" max="5" placeholder="5"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Latitude (carte)</label><input class="fi" type="number" id="ilat" step="any" placeholder="Ex: 35.6762"></div>
+      <div class="fg"><label class="fl">Longitude (carte)</label><input class="fi" type="number" id="ilng" step="any" placeholder="Ex: 139.6503"></div>
+    </div>
+    <div class="fg"><label class="fl">Lien internet</label><input class="fi" type="url" id="iul" placeholder="https://..."></div>
+    <div class="fg"><label class="fl">Note personnelle</label><textarea class="fta" id="ino" placeholder="Vos remarques..." style="min-height:55px"></textarea></div>
+    <div class="fg"><label class="fl">Tags (virgules)</label><input class="fi" id="itg0" placeholder="incontournable, matin, photos"></div>
+    <div class="fa">
+      <button class="btn bs" onclick="cm('m-idea')">Annuler</button>
+      <button class="btn bmoss" id="atrb" onclick="addToTrip()" style="display:none">Ajouter au voyage</button>
+      <button class="btn bp" onclick="saveIdea()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="mb" id="m-act">
+  <div class="md">
+    <div class="mh"><div class="mt0">Activit&#233;</div><button class="mc" onclick="cm('m-act')">&#10005;</button></div>
+    <input type="hidden" id="aid">
+    <div class="fg"><label class="fl">Nom *</label><input class="fi" id="aname" placeholder="Ex : Kinkaku-ji"></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Jour</label><select class="fse" id="aday"></select></div>
+      <div class="fg"><label class="fl">Heure</label><input class="fi" type="time" id="atm" value="10:00"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Dur&#233;e</label><select class="fse" id="adur">
+        <option value="">&mdash;</option>
+        <option>30min</option><option>1h</option><option>1h30</option><option>2h</option>
+        <option>2h30</option><option>3h</option><option>4h</option>
+        <option>Demi-journ&#233;e</option><option>Journ&#233;e</option><option>Soir&#233;e</option>
+      </select></div>
+      <div class="fg"><label class="fl">Co&#251;t (&#8364;)</label><input class="fi" type="number" id="acost" placeholder="0"></div>
+    </div>
+    <div class="fg"><label class="fl">Cat&#233;gorie</label><select class="fse" id="acat">
+      <option value="temple">Temple</option><option value="restaurant">Restaurant</option>
+      <option value="activite">Activit&#233;</option><option value="transport">Transport</option>
+      <option value="hotel">H&#244;tel</option><option value="shopping">Shopping</option>
+      <option value="nature">Nature</option><option value="lieux">Lieux</option><option value="autre">Autre</option>
+    </select></div>
+    <div class="fg"><label class="fl">Notes</label><textarea class="fta" id="anotes" placeholder="D&#233;tails..." style="min-height:55px"></textarea></div>
+    <div class="fg"><label class="fl">Site internet</label><input class="fi" type="url" id="aurl" placeholder="https://..."></div>
+    <div class="fa"><button class="btn bs" onclick="cm('m-act')">Annuler</button><button class="btn bp" onclick="saveAct()">Enregistrer</button></div>
+  </div>
+</div>
+
+<div class="mb" id="m-bud">
+  <div class="md">
+    <div class="mh"><div class="mt0">D&#233;pense</div><button class="mc" onclick="cm('m-bud')">&#10005;</button></div>
+    <input type="hidden" id="bid">
+    <div class="fg"><label class="fl">Description *</label><input class="fi" id="bde" placeholder="Ex : Ryokan Arashiyama"></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Cat&#233;gorie</label><select class="fse" id="bca">
+        <option value="hotels">H&#244;tels</option><option value="restaurants">Restaurants</option>
+        <option value="activites">Activit&#233;s</option><option value="transports">Transports</option>
+        <option value="shopping">Shopping</option><option value="divers">Divers</option>
+      </select></div>
+      <div class="fg"><label class="fl">Montant</label><input class="fi" type="number" id="bam" placeholder="0" step="0.01"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Devise</label><select class="fse" id="bcur">
+        <option value="EUR">&#8364; Euro</option>
+        <option value="LOC" id="bcur-loc">Devise locale</option>
+      </select></div>
+      <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="bdt"></div>
+    </div>
+    <div class="fa"><button class="btn bs" onclick="cm('m-bud')">Annuler</button><button class="btn bp" onclick="saveBud()">Enregistrer</button></div>
+  </div>
+</div>
+
+<div class="mb" id="m-tr">
+  <div class="md">
+    <div class="mh"><div class="mt0">Trajet</div><button class="mc" onclick="cm('m-tr')">&#10005;</button></div>
+    <input type="hidden" id="trid">
+    <div class="fg"><label class="fl">Nom *</label><input class="fi" id="trna" placeholder="Ex : Paris &#8594; Rome"></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Type</label><select class="fse" id="trty">
+        <option value="train">Train</option><option value="metro">M&#233;tro</option>
+        <option value="bus">Bus</option><option value="avion">Avion</option>
+        <option value="ferry">Ferry</option><option value="voiture">Voiture</option>
+        <option value="autre">Autre</option>
+      </select></div>
+      <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="trda"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">D&#233;part</label><input class="fi" id="trfr" placeholder="Tokyo"></div>
+      <div class="fg"><label class="fl">Arriv&#233;e</label><input class="fi" id="trto" placeholder="Kyoto"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Heure d&#233;part</label><input class="fi" type="time" id="trtf"></div>
+      <div class="fg"><label class="fl">Heure arriv&#233;e</label><input class="fi" type="time" id="trtt"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Prix (&#8364;)</label><input class="fi" type="number" id="trpr" placeholder="0"></div>
+      <div class="fg"><label class="fl">Compagnie</label><input class="fi" id="trco" placeholder="JR West"></div>
+    </div>
+    <div class="fg"><label class="fl">R&#233;servation</label><select class="fse" id="trbk">
+      <option value="pending">&#192; r&#233;server</option><option value="reserved">R&#233;serv&#233;</option><option value="inclus">Pass inclus</option>
+    </select></div>
+    <div class="fa"><button class="btn bs" onclick="cm('m-tr')">Annuler</button><button class="btn bp" onclick="saveTr()">Enregistrer</button></div>
+  </div>
+</div>
+
+
+
+
+<div class="mb" id="m-daypick">
+  <div class="md" style="max-width:420px">
+    <div class="mh">
+      <div class="mt0">Ajouter au planning</div>
+      <button class="mc" onclick="cm('m-daypick')">&#10005;</button>
+    </div>
+    <input type="hidden" id="daypick-idea-id">
+    <div class="fg">
+      <label class="fl">Idée sélectionnée</label>
+      <div id="daypick-idea-name" style="font-weight:600;font-size:14px;color:var(--ink);padding:8px 0"></div>
+    </div>
+    <div class="fg">
+      <label class="fl">Choisir le jour *</label>
+      <select class="fse" id="daypick-day"></select>
+    </div>
+    <div class="fg">
+      <label class="fl">Heure</label>
+      <input class="fi" type="time" id="daypick-time" value="10:00">
+    </div>
+    <div class="fa">
+      <button class="btn bs" onclick="cm('m-daypick')">Annuler</button>
+      <button class="btn bp" onclick="confirmAddToDay()">Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<div class="mb" id="m-actchoice">
+  <div class="md" style="max-width:400px">
+    <div class="mh"><div class="mt0">Ajouter une activit&#233;</div><button class="mc" onclick="cm('m-actchoice')">&#10005;</button></div>
+    <input type="hidden" id="acday">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn bp" style="justify-content:center;padding:14px" onclick="cm('m-actchoice');showAddActForm(document.getElementById('acday').value)">+ Cr&#233;er une nouvelle activit&#233;</button>
+      <button class="btn bred-lt" style="justify-content:center;padding:14px" onclick="cm('m-actchoice');showPickIdea(document.getElementById('acday').value)">Choisir dans mes id&#233;es</button>
+    </div>
+  </div>
+</div>
+
+<div class="mb" id="m-pickidea">
+  <div class="md" style="max-width:420px">
+    <div class="mh"><div class="mt0">Depuis mes id&#233;es</div><button class="mc" onclick="cm('m-pickidea')">&#10005;</button></div>
+    <div class="fg"><label class="fl">Id&#233;e *</label><select class="fse" id="pi-idea"></select></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Jour</label><select class="fse" id="pi-day"></select></div>
+      <div class="fg"><label class="fl">Heure</label><input class="fi" type="time" id="pi-time" value="10:00"></div>
+    </div>
+    <div class="fa">
+      <button class="btn bs" onclick="cm('m-pickidea')">Annuler</button>
+      <button class="btn bp" onclick="confirmPickIdea()">Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<div class="mb" id="m-day">
+  <div class="md" style="max-width:380px">
+    <div class="mh"><div class="mt0">Ville de l&rsquo;&#233;tape</div><button class="mc" onclick="cm('m-day')">&#10005;</button></div>
+    <input type="hidden" id="dayid">
+    <div class="fg"><label class="fl">Ville / &#233;tape du jour</label><input class="fi" id="dcity" placeholder="Ex : Kyoto" onkeypress="if(event.key==='Enter')saveDayCity()"></div>
+    <div class="fa">
+      <button class="btn bs" onclick="cm('m-day')">Annuler</button>
+      <button class="btn bp" onclick="saveDayCity()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="mb" id="m-trip">
+  <div class="md">
+    <div class="mh"><div class="mt0" id="mtript">Nouveau voyage</div><button class="mc" onclick="cm('m-trip')">&#10005;</button></div>
+    <input type="hidden" id="tpid">
+    <div class="fr">
+      <div class="fg"><label class="fl">Nom du voyage *</label><input class="fi" id="tpname" placeholder="Ex : Mon Voyage au Japon"></div>
+      <div class="fg"><label class="fl">Destination</label><input class="fi" id="tpdest" placeholder="Ex : Japon" oninput="autoCurrency()"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Date de d&#233;part</label><input class="fi" type="date" id="tpdate"></div>
+      <div class="fg"><label class="fl">Budget total (&#8364;)</label><input class="fi" type="number" id="tpbudget" placeholder="Ex : 3000"></div>
+    </div>
+    <div class="fg"><label class="fl">Description</label><textarea class="fta" id="tpdesc" placeholder="Quelques mots sur ce voyage..."></textarea></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Devise locale (auto)</label><input class="fi" id="tpcur" maxlength="4" placeholder="auto"></div>
+      <div class="fg"><label class="fl">Taux (1 &#8364; = ?)</label><input class="fi" type="number" id="tprate" step="any" placeholder="auto"></div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin:-4px 0 12px">Image de couverture, devise et taux d&#233;tect&#233;s automatiquement d&rsquo;apr&egrave;s la destination (modifiables).</div>
+    <div class="fa">
+      <button class="btn bs" onclick="cm('m-trip')">Annuler</button>
+      <button class="btn bp" onclick="saveTrip()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div id="tc"></div>
 <script>
-// Charge l'application depuis Supabase Storage (contenu mis à jour sans toucher à cette page)
-fetch('https://kteglannapjlxzqgtkgo.supabase.co/storage/v1/object/public/app/index.html?v=' + Date.now())
-  .then(function(r){ if(!r.ok) throw new Error(r.status); return r.text(); })
-  .then(function(html){
-    document.open();
-    document.write(html);
-    document.close();
-  })
-  .catch(function(){
-    document.body.innerHTML = '<div style="text-align:center;padding:20px">Impossible de charger l’application.<br>Vérifiez votre connexion puis rechargez la page.</div>';
+
+// ─── STATE MULTI-VOYAGES ───
+let trips={list:[],theme:'light'};
+let currentTripId=null;
+function defaultState(){return {ideas:[],days:[],budget:[],transport:[],notes:[],objectives:[],gallery:[],checklist:{},currentNote:null,favFilter:false,departureDate:new Date().toISOString().slice(0,10),totalBudget:6000,collapsedDays:{}};}
+let st=defaultState();
+function tripMeta(){return trips.list.find(t=>t.id===currentTripId)||{};}
+function getRate(){return parseFloat(tripMeta().rate)||162;}
+function getCur(){return tripMeta().cur||'¥';}
+function saveTrips(){try{localStorage.setItem('trips_meta',JSON.stringify(trips));}catch(e){}}
+function loadTrips(){
+  try{const d=localStorage.getItem('trips_meta');if(d)trips={...trips,...JSON.parse(d)};}catch(e){}
+  // Migration depuis l'ancien organiseur mono-voyage (clé 'jp')
+  try{
+    const old=localStorage.getItem('jp');
+    if(old&&!trips.list.some(t=>t.migratedFromJp)){
+      const data=JSON.parse(old);
+      const id=uid();
+      trips.list.unshift({id,name:'Mon Voyage au Japon',dest:'Japon',glyph:'日',date:data.departureDate||'2027-10-01',cover:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Fushimi_Inari-taisha_torii_%28cropped%29.jpg/1280px-Fushimi_Inari-taisha_torii_%28cropped%29.jpg',desc:'',cur:'¥',rate:162,migratedFromJp:true});
+      localStorage.setItem('trip_'+id,old);
+      saveTrips();
+    }
+  }catch(e){}
+}
+function save(){if(!currentTripId)return;try{localStorage.setItem('trip_'+currentTripId,JSON.stringify(st));}catch(e){}cloudPush();}
+function load(){
+  st=defaultState();
+  let hadData=false;
+  try{const d=localStorage.getItem('trip_'+currentTripId);if(d){hadData=true;st={...st,...JSON.parse(d)};}}catch(e){}
+  if(!st.days)st.days=[];if(!st.ideas)st.ideas=[];
+  const m=tripMeta();
+  if(!hadData&&m.date)st.departureDate=m.date;
+  if(!hadData&&m.budget)st.totalBudget=m.budget;
+  if(!Object.keys(st.checklist||{}).length&&!st.ideas.length&&!st.days.length)initData();
+  st.ideas.forEach(i=>{if(i.cat==='onsen')i.cat='lieux';});
+  st.days.forEach(d=>{(d.activities||[]).forEach(a=>{if(a.cat==='onsen')a.cat='lieux';});});
+  save();
+}
+
+// ─── DEVISE AUTO PAR DESTINATION ───
+const DEST_CUR={
+  'japon':['JPY','¥',165],'japan':['JPY','¥',165],'tokyo':['JPY','¥',165],'kyoto':['JPY','¥',165],
+  'etats-unis':['USD','$',1.08],'etats unis':['USD','$',1.08],'usa':['USD','$',1.08],'new york':['USD','$',1.08],'californie':['USD','$',1.08],'floride':['USD','$',1.08],
+  'royaume-uni':['GBP','£',0.85],'royaume uni':['GBP','£',0.85],'angleterre':['GBP','£',0.85],'londres':['GBP','£',0.85],'ecosse':['GBP','£',0.85],
+  'suisse':['CHF','CHF',0.94],
+  'canada':['CAD','$C',1.52],'quebec':['CAD','$C',1.52],'montreal':['CAD','$C',1.52],
+  'australie':['AUD','$A',1.65],'nouvelle-zelande':['NZD','$NZ',1.80],'nouvelle zelande':['NZD','$NZ',1.80],
+  'thailande':['THB','฿',38],'bangkok':['THB','฿',38],
+  'vietnam':['VND','₫',27000],'cambodge':['KHR','៛',4400],'laos':['LAK','₭',24000],
+  'chine':['CNY','¥',7.7],'coree':['KRW','₩',1500],'seoul':['KRW','₩',1500],
+  'inde':['INR','₹',91],'sri lanka':['LKR','Rs',320],'nepal':['NPR','Rs',145],
+  'indonesie':['IDR','Rp',17000],'bali':['IDR','Rp',17000],
+  'malaisie':['MYR','RM',4.7],'singapour':['SGD','$S',1.42],'philippines':['PHP','₱',61],
+  'taiwan':['TWD','NT$',34],'hong kong':['HKD','HK$',8.3],
+  'maroc':['MAD','DH',10.6],'tunisie':['TND','DT',3.4],'egypte':['EGP','£E',53],
+  'afrique du sud':['ZAR','R',19.5],'kenya':['KES','Sh',140],'tanzanie':['TZS','Sh',2800],'maurice':['MUR','Rs',50],'madagascar':['MGA','Ar',4900],'senegal':['XOF','CFA',656],
+  'mexique':['MXN','$M',20],'bresil':['BRL','R$',6.2],'argentine':['ARS','$a',1150],
+  'chili':['CLP','$Ch',1020],'perou':['PEN','S/',4.0],'colombie':['COP','$Co',4600],'costa rica':['CRC','₡',560],'bolivie':['BOB','Bs',7.4],
+  'turquie':['TRY','₺',38],'istanbul':['TRY','₺',38],
+  'emirats':['AED','AED',3.9],'dubai':['AED','AED',3.9],'qatar':['QAR','QR',3.9],'israel':['ILS','₪',3.9],'jordanie':['JOD','JD',0.77],'oman':['OMR','R.O',0.42],
+  'islande':['ISK','kr',150],'norvege':['NOK','kr',11.6],'suede':['SEK','kr',11.4],'danemark':['DKK','kr',7.46],
+  'pologne':['PLN','zł',4.3],'tchequie':['CZK','Kč',25],'republique tcheque':['CZK','Kč',25],'prague':['CZK','Kč',25],
+  'hongrie':['HUF','Ft',400],'budapest':['HUF','Ft',400],'roumanie':['RON','lei',5.0],'bulgarie':['BGN','лв',1.96],
+  'albanie':['ALL','L',98],'serbie':['RSD','din',117],'suisse alemanique':['CHF','CHF',0.94],
+  'russie':['RUB','₽',110],'georgie':['GEL','₾',3.0],'armenie':['AMD','֏',420]
+};
+function normTxt(s){return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();}
+function lookupCur(dest){
+  const d=normTxt(dest);
+  if(!d)return null;
+  for(const [k,v] of Object.entries(DEST_CUR)){
+    if(d.includes(k)||(k.includes(d)&&d.length>=4))return v;
+  }
+  return null;
+}
+function autoCurrency(){
+  const info=lookupCur(document.getElementById('tpdest').value);
+  const curEl=document.getElementById('tpcur'),rateEl=document.getElementById('tprate');
+  if(info){curEl.value=info[1];rateEl.value=info[2];}
+  else{curEl.value='€';rateEl.value=1;}
+}
+async function fetchCover(tripId){
+  const t=trips.list.find(x=>x.id===tripId);if(!t)return;
+  const q=(t.dest||t.name||'').trim();if(!q)return;
+  if(t.cover&&t.coverQ===q)return;
+  try{
+    const r=await fetch('https://fr.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(q));
+    if(!r.ok)return;
+    const j=await r.json();
+    const img=(j.originalimage&&j.originalimage.source)||(j.thumbnail&&j.thumbnail.source)||'';
+    if(img){
+      t.cover=img;t.coverQ=q;saveTrips();
+      if(!document.body.classList.contains('home')&&currentTripId===tripId)applyTripUI();
+      else renderTrips();
+    }
+  }catch(e){}
+}
+async function fetchDestCoords(tripId){
+  const t=trips.list.find(x=>x.id===tripId);if(!t)return;
+  const q=(t.dest||t.name||'').trim();if(!q)return;
+  if(t.destLat&&t.destQ===q)return;
+  try{
+    const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q));
+    if(!r.ok)return;
+    const j=await r.json();
+    if(j&&j[0]&&j[0].lat){
+      t.destLat=parseFloat(j[0].lat);t.destLng=parseFloat(j[0].lon);t.destQ=q;
+      if(j[0].boundingbox)t.destBB=j[0].boundingbox.map(parseFloat);
+      saveTrips();
+      if(currentTripId===tripId&&mapInitialized)refreshMarkers();
+    }
+  }catch(e){}
+}
+async function fetchLiveRate(tripId){
+  const t=trips.list.find(x=>x.id===tripId);if(!t||!t.curCode||t.curCode==='EUR')return;
+  try{
+    const r=await fetch('https://open.er-api.com/v6/latest/EUR');
+    const j=await r.json();
+    if(j&&j.rates&&j.rates[t.curCode]){
+      t.rate=Math.round(j.rates[t.curCode]*10000)/10000;
+      saveTrips();
+      if(currentTripId===tripId)applyTripUI();
+    }
+  }catch(e){}
+}
+
+// ─── CLOUD (Supabase) — synchronisation & partage ───
+const SUPA_URL='https://kteglannapjlxzqgtkgo.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0ZWdsYW5uYXBqbHh6cWd0a2dvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxMDY1NTksImV4cCI6MjA5ODY4MjU1OX0.DqDOcxlE7CnIp6zhub9ZQRBo9bqTrWmNBLw64D0zh9Q';
+async function rpc(fn,args){
+  const r=await fetch(SUPA_URL+'/rest/v1/rpc/'+fn,{
+    method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify(args)
   });
+  if(!r.ok)throw new Error('rpc '+fn+' '+r.status);
+  const txt=await r.text();
+  return txt?JSON.parse(txt):null;
+}
+let pushTimer=null,lastPushAt=0,lastServerStamp=null;
+// Pousse le voyage ouvert vers le cloud (débounce 800 ms après chaque save)
+function cloudPush(){
+  if(!currentTripId)return;
+  clearTimeout(pushTimer);
+  const id=currentTripId;
+  lastPushAt=Date.now();
+  pushTimer=setTimeout(()=>{
+    pushTimer=null;
+    lastPushAt=Date.now();
+    rpc('upsert_trip',{tid:id,m:tripMeta(),d:st}).catch(()=>{});
+  },800);
+}
+// Pousse n'importe quel voyage (création / édition depuis l'accueil)
+function cloudPushTrip(id){
+  let d={};try{d=JSON.parse(localStorage.getItem('trip_'+id)||'{}');}catch(e){}
+  const m=trips.list.find(t=>t.id===id)||{};
+  rpc('upsert_trip',{tid:id,m,d}).catch(()=>{});
+}
+// Récupère un voyage du cloud (le serveur gagne)
+async function cloudPull(id){
+  try{
+    const row=await rpc('get_trip',{tid:id});
+    if(row&&row.id){
+      if(id===currentTripId)lastServerStamp=row.updated_at;
+      if(row.data&&Object.keys(row.data).length)localStorage.setItem('trip_'+id,JSON.stringify(row.data));
+      const t=trips.list.find(x=>x.id===id);
+      if(t)Object.assign(t,row.meta||{});
+      else trips.list.push({id,...(row.meta||{})});
+      saveTrips();
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+// Rafraîchit tous les voyages locaux depuis le cloud (au chargement)
+async function refreshTripsFromCloud(){
+  for(const t of [...trips.list]){await cloudPull(t.id);}
+  renderTrips();
+}
+// Lien d'invitation : quiconque l'ouvre rejoint le voyage
+function inviteTrip(id){
+  const url=location.origin+location.pathname+'?join='+id;
+  if(navigator.clipboard&&location.protocol.startsWith('http')){
+    navigator.clipboard.writeText(url).then(()=>toast('Lien d\'invitation copié !','s')).catch(()=>prompt('Copiez ce lien :',url));
+  }else prompt('Copiez ce lien :',url);
+}
+// Au retour sur l'onglet : re-synchroniser le voyage ouvert
+document.addEventListener('visibilitychange',async()=>{
+  if(document.visibilityState==='visible'&&currentTripId){
+    const id=currentTripId;
+    const ok=await cloudPull(id);
+    if(ok&&currentTripId===id){load();applyTripUI();renderAll();}
+  }
+});
+// Quasi temps réel : toutes les 12 s, applique les modifications des autres participants
+setInterval(async()=>{
+  if(!currentTripId)return;
+  if(document.visibilityState!=='visible')return;
+  if(pushTimer||Date.now()-lastPushAt<15000)return;      // édition locale récente
+  if(document.querySelector('.mb.op'))return;            // une fenêtre est ouverte
+  const id=currentTripId;
+  try{
+    const row=await rpc('get_trip',{tid:id});
+    if(!row||!row.updated_at||id!==currentTripId)return;
+    if(lastServerStamp&&row.updated_at!==lastServerStamp){
+      lastServerStamp=row.updated_at;
+      if(row.data&&Object.keys(row.data).length)localStorage.setItem('trip_'+id,JSON.stringify(row.data));
+      const t=trips.list.find(x=>x.id===id);
+      if(t)Object.assign(t,row.meta||{});
+      saveTrips();
+      load();applyTripUI();renderAll();
+      if(mapInitialized&&document.getElementById('pg-map').classList.contains('act'))refreshMarkers();
+      toast('Mis à jour par un participant','s');
+    }else if(!lastServerStamp){
+      lastServerStamp=row.updated_at;
+    }
+  }catch(e){}
+},12000);
+
+// ─── SAUVEGARDE / RESTAURATION ───
+function exportBackup(){
+  const data={trips_meta:trips,tripsData:{}};
+  trips.list.forEach(t=>{try{data.tripsData[t.id]=JSON.parse(localStorage.getItem('trip_'+t.id)||'{}');}catch(e){}});
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='mes-voyages-sauvegarde-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  toast('Sauvegarde exportée','s');
+}
+function importBackup(e){
+  const file=e.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(!data.trips_meta||!Array.isArray(data.trips_meta.list))throw new Error('format');
+      trips=data.trips_meta;
+      Object.entries(data.tripsData||{}).forEach(([id,d])=>{try{localStorage.setItem('trip_'+id,JSON.stringify(d));}catch(x){}});
+      saveTrips();renderTrips();
+      toast('Sauvegarde importée','s');
+    }catch(err){toast('Fichier de sauvegarde invalide','e');}
+  };
+  r.readAsText(file);
+  e.target.value='';
+}
+
+// ─── GESTION DES VOYAGES ───
+function countdownLabel(dateStr){
+  if(!dateStr)return'';
+  const dep=new Date(dateStr+'T00:00:00'),now=new Date();now.setHours(0,0,0,0);
+  const d=Math.round((dep-now)/86400000);
+  return d<0?'':(d===0?'Départ !':'J-'+d);
+}
+function renderTrips(){
+  const g=document.getElementById('tripsGrid');
+  const cards=trips.list.map(t=>{
+    let ideas=0,days=0;
+    try{const d=JSON.parse(localStorage.getItem('trip_'+t.id)||'{}');ideas=(d.ideas||[]).length;days=(d.days||[]).length;}catch(e){}
+    const cd=countdownLabel(t.date);
+    const glyph=t.glyph||(t.dest||t.name||'?').charAt(0).toUpperCase();
+    return `<div class="trip-card" onclick="openTrip('${t.id}')">
+      <div class="trip-cover">
+        ${t.cover?`<img src="${t.cover}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`:''}
+        <div class="trip-glyph" style="${t.cover?'display:none':''}">${glyph}</div>
+        ${cd?`<div class="trip-cd">${cd}</div>`:''}
+      </div>
+      <div class="trip-body">
+        <div class="trip-name">${t.name}</div>
+        <div class="trip-meta">${[t.dest,t.date?new Date(t.date+'T00:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'}):''].filter(Boolean).join(' · ')||'&nbsp;'}</div>
+        <div class="trip-stats"><span><b>${ideas}</b> idée${ideas>1?'s':''}</span><span><b>${days}</b> jour${days>1?'s':''} planifié${days>1?'s':''}</span></div>
+        <div class="trip-actions" onclick="event.stopPropagation()">
+          <button class="btn bp bsm" onclick="openTrip('${t.id}')">Ouvrir</button>
+          <button class="btn bs bsm" onclick="showTripModal('${t.id}')">Modifier</button>
+          <button class="btn bmoss bsm" onclick="inviteTrip('${t.id}')" title="Copier un lien pour inviter quelqu'un sur ce voyage">Inviter</button>
+          <button class="btn bs bsm" style="color:var(--red);margin-left:auto" onclick="delTrip('${t.id}')">Supprimer</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  g.innerHTML=cards+`<div class="trip-new" onclick="showTripModal()"><div class="trip-new-plus">+</div><div style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase">Nouveau voyage</div></div>`;
+}
+function showTripModal(id){
+  document.getElementById('tpid').value=id||'';
+  document.getElementById('mtript').textContent=id?'Modifier le voyage':'Nouveau voyage';
+  const t=id?trips.list.find(x=>x.id===id):null;
+  document.getElementById('tpname').value=t?.name||'';
+  document.getElementById('tpdest').value=t?.dest||'';
+  document.getElementById('tpdate').value=t?.date||'';
+  document.getElementById('tpbudget').value=t?.budget||'';
+  document.getElementById('tpdesc').value=t?.desc||'';
+  document.getElementById('tpcur').value=t?.cur||'';
+  document.getElementById('tprate').value=t?.rate||'';
+  om('m-trip');
+}
+function saveTrip(){
+  const name=document.getElementById('tpname').value.trim();
+  if(!name){toast('Nom requis','e');return;}
+  const id=document.getElementById('tpid').value;
+  const dest=document.getElementById('tpdest').value.trim();
+  const info=lookupCur(dest);
+  const curIn=document.getElementById('tpcur').value.trim();
+  const rateIn=parseFloat(document.getElementById('tprate').value);
+  const f={
+    name,dest,
+    date:document.getElementById('tpdate').value,
+    budget:parseFloat(document.getElementById('tpbudget').value)||'',
+    desc:document.getElementById('tpdesc').value.trim(),
+    cur:curIn||(info?info[1]:'€'),
+    rate:rateIn||(info?info[2]:1),
+    curCode:info?info[0]:'EUR'
+  };
+  let t;
+  if(id){t=trips.list.find(x=>x.id===id);if(t)Object.assign(t,f);}
+  else{t={id:uid(),...f};trips.list.push(t);}
+  saveTrips();cm('m-trip');renderTrips();
+  if(t){fetchCover(t.id);fetchLiveRate(t.id);fetchDestCoords(t.id);cloudPushTrip(t.id);}
+  if(id&&id===currentTripId){
+    applyTripUI();
+    if(f.date&&f.date!==st.departureDate){st.departureDate=f.date;renumberDays();save();initCountdown();renderPlanning();}
+    if(f.budget&&f.budget!==st.totalBudget){st.totalBudget=f.budget;save();const inp=document.getElementById('tbinp');if(inp)inp.value=f.budget;renderBudget();renderDash();}
+  }
+  toast('Voyage enregistré','s');
+}
+function delTrip(id){
+  if(!confirm('Supprimer ce voyage et toutes ses données ?\n(Il sera aussi supprimé pour les personnes invitées.)'))return;
+  trips.list=trips.list.filter(t=>t.id!==id);
+  try{localStorage.removeItem('trip_'+id);}catch(e){}
+  rpc('delete_trip',{tid:id}).catch(()=>{});
+  saveTrips();renderTrips();toast('Voyage supprimé');
+}
+async function openTrip(id){
+  await cloudPull(id);
+  currentTripId=id;
+  load();
+  // Calendrier positionné sur le mois du départ
+  const dep=new Date((st.departureDate||'')+'T00:00:00');
+  if(!isNaN(dep)){calY=dep.getFullYear();calM=dep.getMonth();}
+  document.body.classList.remove('home');
+  applyTripUI();
+  renderAll();
+  initCountdown();
+  fetchDestCoords(id);
+  if(st.notes.length){st.currentNote=st.currentNote&&st.notes.some(n=>n.id===st.currentNote)?st.currentNote:st.notes[0].id;loadNote(st.currentNote);}
+  else{st.currentNote=null;document.getElementById('nti0').value='';document.getElementById('nce').innerHTML='';renderNotes();}
+  const inp=document.getElementById('tbinp');if(inp)inp.value=st.totalBudget;
+  nav('dashboard');
+}
+function goHome(){
+  save();
+  currentTripId=null;
+  renderTrips();
+  document.body.classList.add('home');
+}
+function applyTripUI(){
+  const t=tripMeta();
+  document.title=t.name||'Mes Voyages';
+  const dateLbl=t.date?new Date(t.date+'T00:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'}):'';
+  document.getElementById('sb-glyph').textContent=t.glyph||(t.dest||t.name||'?').charAt(0).toUpperCase();
+  document.getElementById('sb-name').innerHTML=`${t.name||''}<span>${dateLbl||t.dest||'&nbsp;'}</span>`;
+  document.getElementById('bn-tag').textContent=[t.dest,dateLbl].filter(Boolean).join(' · ')||'Mon voyage';
+  document.getElementById('bn-title').textContent=t.name||'Mon Voyage';
+  document.getElementById('bn-intro').textContent=t.desc||'Bienvenue sur le tableau de bord de ce voyage ! Organisez tout pas à pas : idées, planning, budget, transports — tout sera prêt le moment venu.';
+  const img=document.getElementById('bn-img');
+  if(t.cover){img.src=t.cover;img.style.display='';}else{img.style.display='none';}
+  const cur=getCur();
+  document.getElementById('cv-title').textContent=`${cur} ↔ Euro`;
+  document.getElementById('yi-label').textContent=`Devise locale (${cur})`;
+  document.getElementById('cv-rate-note').textContent=`Taux approximatif : 1 € ≈ ${getRate().toLocaleString('fr-FR')} ${cur}`;
+}
+
+function uid(){return Math.random().toString(36).slice(2,9)+Date.now().toString(36);}
+function toast(m,t=''){const e=document.createElement('div');e.className='tst'+(t?' t'+t:'');e.textContent=m;document.getElementById('tc').appendChild(e);setTimeout(()=>e.remove(),2800);}
+function cm(id){document.getElementById(id).classList.remove('op');}
+function om(id){document.getElementById(id).classList.add('op');}
+document.querySelectorAll('.mb').forEach(b=>b.addEventListener('click',e=>{if(e.target===b)b.classList.remove('op');}));
+
+
+function catLabel(c){
+  const m={temple:'Temple',restaurant:'Restaurant',hotel:'Hôtel',activite:'Activité',
+    lieux:'Lieux',onsen:'Lieux',musee:'Excursion',excursion:'Excursion',
+    shopping:'Shopping',nature:'Nature',ville:'Ville',pdv:'Point de vue',
+    transport:'Transport',autre:'Autre'};
+  return m[c]||(c?c.charAt(0).toUpperCase()+c.slice(1):'');
+}
+
+function catColor(c){const m={
+  temple:'#B07840',restaurant:'#C0392B',hotel:'#5B6FAE',
+  activite:'#2A7A6A',lieux:'#7A5A9A',musee:'#7A5A9A',
+  shopping:'#A0609A',nature:'#3A7A3A',ville:'#2A5898',
+  pdv:'#8A7A30',autre:'#708090'
+};return m[c]||'#888';}
+function catBg(c){const m={
+  temple:'#F8F0E4',restaurant:'#FDECEA',hotel:'#EEF0F8',
+  activite:'#E8F5F2',lieux:'#F3EEF8',musee:'#F3EEF8',
+  shopping:'#F8EEF6',nature:'#EAF4EA',ville:'#E8EEF8',
+  pdv:'#F8F6E4',autre:'#F0F0F0'
+};return m[c]||'#F5F5F5';}
+function catIc(c){const m={ville:'○',excursion:'◇',musee:'◇',restaurant:'◈',shopping:'□',activite:'△',temple:'⊕',lieux:'◎',onsen:'◎',nature:'◉',transport:'→',divers:'·',hotel:'▱',pdv:'◈',autre:'·'};return m[c]||'·';}
+function fmtCost(n){const v=parseFloat(n);if(!v)return'Gratuit';return v.toLocaleString('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0});}
+
+// COUNTDOWN
+
+function updateCountdown(dateStr){
+  if(!dateStr) return;
+  st.departureDate = dateStr;
+  save();
+  const m=tripMeta();
+  if(m.id&&m.date!==dateStr){m.date=dateStr;saveTrips();}
+  const dep = new Date(dateStr + 'T00:00:00');
+  const now = new Date();
+  now.setHours(0,0,0,0);
+  const days = Math.round((dep - now) / 86400000);
+  const badge = document.getElementById('cdwBadge');
+  if(badge) badge.textContent = days <= 0 ? 'En cours !' : 'J-' + days;
+}
+function initCountdown(){
+  const dateStr = st.departureDate || new Date().toISOString().slice(0,10);
+  const inp = document.getElementById('depDateInput');
+  if(inp) inp.value = dateStr;
+  updateCountdown(dateStr);
+}
+
+function updCountdown(){
+}
+
+// NAVIGATION
+const pageNames={dashboard:'Tableau de bord',ideas:'Mes idées',planning:'Planning',budget:'Budget',transport:'Transport',notes:'Journal',map:'Carte interactive',converter:'Convertisseur',carnet:'Carnet de voyage',checklist:'Checklist',weather:'Météo'};
+function nav(page,extra){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('act'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('act'));
+  const pg=document.getElementById('pg-'+page);
+  if(pg)pg.classList.add('act');
+  document.querySelectorAll(`[data-p="${page}"]`).forEach(n=>n.classList.add('act'));
+  document.getElementById('tbt').textContent=pageNames[page]||page;
+  if(extra){const el=document.getElementById('fcat');if(el)el.value=extra;}
+  const renders={ideas:renderIdeas,planning:renderPlanning,budget:renderBudget,transport:renderTr,notes:renderNotes,map:initMap,dashboard:renderDash,converter:renderConverter,carnet:renderCarnet,checklist:renderCL,weather:renderWeather};
+  if(renders[page])renders[page]();
+}
+document.querySelectorAll('.ni[data-p]').forEach(it=>it.addEventListener('click',()=>nav(it.dataset.p,it.dataset.cat||null)));
+
+function tss(id){document.getElementById(id).classList.toggle('open');}
+document.getElementById('stg').addEventListener('click',()=>{
+  const sb=document.getElementById('sb');sb.classList.toggle('col');
+  document.getElementById('stg').textContent=sb.classList.contains('col')?'⟩':'⟨';
+});
+function toggleMob(){document.getElementById('sb').classList.toggle('mob');}
+function toggleTheme(){
+  trips.theme=trips.theme==='light'?'night':'light';
+  document.documentElement.setAttribute('data-theme',trips.theme==='night'?'night':'');
+  const lbl=trips.theme==='night'?'Jour':'Nuit';
+  const b1=document.getElementById('thbtn');if(b1)b1.textContent=lbl;
+  const b2=document.getElementById('thbtn-home');if(b2)b2.textContent=lbl;
+  saveTrips();
+}
+
+function checkMobile(){const m=window.innerWidth<768;document.getElementById('mbb').style.display=m?'flex':'none';}
+window.addEventListener('resize',checkMobile);checkMobile();
+
+// EXPORT/IMPORT
+function downloadCarnet(){
+  if(!st.days||!st.days.length){toast('Aucun jour planifié dans le carnet','e');return;}
+  const trip=tripMeta();
+  const tripName=trip.name||'Mon Voyage';
+  const tripSub=[trip.dest,trip.date?new Date(trip.date+'T00:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'}):''].filter(Boolean).join(' — ')||'Carnet de voyage';
+  let html=`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+  <title>Carnet de voyage — ${tripName}</title>
+  <style>
+    body{font-family:'Georgia',serif;max-width:720px;margin:0 auto;padding:40px 32px;color:#1C1814;background:#FAFAF8;line-height:1.7}
+    h1{font-size:32px;font-weight:700;color:#1C1814;margin-bottom:4px}
+    .sub{font-size:13px;color:#9C948A;letter-spacing:.06em;text-transform:uppercase;margin-bottom:40px}
+    .day{margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid #E8E0D0}
+    .day-num{font-size:11px;font-weight:700;color:#C0392B;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px}
+    .day-title{font-size:20px;font-weight:700;margin-bottom:2px}
+    .day-city{font-size:12px;color:#9C948A;margin-bottom:14px}
+    .act{padding:10px 0 10px 16px;border-left:2px solid #E8E0D0;margin-bottom:8px}
+    .act-time{font-size:10px;font-weight:700;color:#9C948A;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
+    .act-name{font-size:15px;font-weight:600;margin-bottom:3px}
+    .act-meta{font-size:12px;color:#9C948A}
+    .act-notes{font-size:13px;color:#5C5248;font-style:italic;margin-top:5px;white-space:pre-line}
+    .empty{color:#9C948A;font-style:italic;font-size:13px;padding:8px 0}
+    .footer{margin-top:48px;font-size:11px;color:#C8C0B4;text-align:center;letter-spacing:.06em}
+  </style></head><body>
+  <h1>${tripName}</h1>
+  <div class="sub">Carnet de voyage &mdash; ${tripSub}</div>`;
+
+  st.days.forEach(day=>{
+    const acts=day.activities||[];
+    const totalCost=acts.reduce((s,a)=>s+parseFloat(a.cost||0),0);
+    html+=`<div class="day">
+      <div class="day-num">Jour ${day.number}</div>
+      <div class="day-title">${day.title.replace(/^Jour \d+ — /,'')}</div>
+      ${day.city?`<div class="day-city">${day.city}</div>`:''}`;
+    if(acts.length){
+      acts.forEach(a=>{
+        html+=`<div class="act">
+          ${a.time?`<div class="act-time">${a.time}${a.duration?' · '+a.duration:''}</div>`:''}
+          <div class="act-name">${a.name}</div>
+          <div class="act-meta">${parseFloat(a.cost)>0?fmtCost(a.cost):'Gratuit'}${a.cat?' · '+catLabel(a.cat):''}</div>
+          ${a.notes?`<div class="act-notes">${a.notes}</div>`:''}
+        </div>`;
+      });
+      if(totalCost>0)html+=`<div style="font-size:12px;color:#9C948A;margin-top:8px;font-weight:600">Total du jour : ${fmtCost(totalCost)}</div>`;
+    } else {
+      html+=`<div class="empty">Aucune activité planifiée</div>`;
+    }
+    html+=`</div>`;
+  });
+
+  const budgetTotal=st.budget.reduce((s,b)=>s+eurOf(b),0)+planningCost();
+  html+=`<div class="footer">Généré le ${new Date().toLocaleDateString('fr-FR')} &mdash; ${st.days.length} jours &mdash; ${budgetTotal>0?fmtCost(budgetTotal)+' de budget enregistré':'Budget à renseigner'}</div>`;
+  html+=`</body></html>`;
+
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='carnet-'+(tripName.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'voyage')+'-'+new Date().toISOString().slice(0,10)+'.html';
+  a.click();
+  toast('Carnet téléchargé !','s');
+}
+
+// DEFAULT DATA
+function initData(){
+  st.objectives=[];
+  st.checklist={'Documents':[{id:uid(),text:'Passeport / carte d\'identité',done:false},{id:uid(),text:'Assurance voyage',done:false},{id:uid(),text:'Billets de transport',done:false},{id:uid(),text:'Réservations hôtels',done:false}],'Vêtements':[{id:uid(),text:'T-shirts',done:false},{id:uid(),text:'Pantalons',done:false},{id:uid(),text:'Veste légère',done:false},{id:uid(),text:'Chaussures confortables',done:false}],'Tech':[{id:uid(),text:'Appareil photo',done:false},{id:uid(),text:'Chargeurs',done:false},{id:uid(),text:'Adaptateur prise',done:false},{id:uid(),text:'Batterie externe',done:false}],'Santé':[{id:uid(),text:'Médicaments',done:false},{id:uid(),text:'Crème solaire',done:false}],'Argent':[{id:uid(),text:'Espèces en devise locale',done:false},{id:uid(),text:'Carte bancaire internationale',done:false}],'Pratique':[{id:uid(),text:'Google Maps hors-ligne',done:false},{id:uid(),text:'Application traduction',done:false},{id:uid(),text:'eSIM / Pocket Wifi',done:false}]};
+  st.ideas=[];
+  save();
+}
+
+// SEARCH
+function handleSearch(q){
+  if(!q.trim()){hideSR();return;}
+  const ql=q.toLowerCase(),res=[];
+  st.ideas.forEach(i=>{if(i.title.toLowerCase().includes(ql)||i.city?.toLowerCase().includes(ql))res.push({ic:'',t:i.title,s:i.city||'Idée',fn:`nav('ideas')`});});
+  st.notes.forEach(n=>{if(n.title?.toLowerCase().includes(ql))res.push({ic:'',t:n.title,s:'Note',fn:`nav('notes');loadNote('${n.id}')`});});
+  st.transport.forEach(t=>{if(t.name?.toLowerCase().includes(ql))res.push({ic:'',t:t.name,s:'Transport',fn:`nav('transport')`});});
+  const el=document.getElementById('sr0');
+  el.innerHTML=res.length?res.slice(0,7).map(r=>`<div class="sri" onclick="${r.fn};hideSR();document.getElementById('gs').value=''"><div style="width:24px;height:24px;border-radius:4px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--text3);flex-shrink:0">${r.ic||'?'}</div><div><div style="font-size:13px;font-weight:500">${r.t}</div><div style="font-size:11px;color:var(--text3)">${r.s}</div></div></div>`).join(''):'<div style="padding:12px;text-align:center;color:var(--text3);font-size:12px">Aucun résultat</div>';
+  el.classList.add('op');
+}
+function showSR(){if(document.getElementById('gs').value)handleSearch(document.getElementById('gs').value);}
+function hideSR(){document.getElementById('sr0').classList.remove('op');}
+
+// CALENDAR
+let calY=new Date().getFullYear(),calM=new Date().getMonth();
+function renderCal(){
+  const months=['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Aoû','Sep','Oct','Nov','Déc'];
+  const days=['L','M','M','J','V','S','D'];
+  const first=new Date(calY,calM,1),last=new Date(calY,calM+1,0).getDate();
+  let sd=first.getDay()===0?6:first.getDay()-1;
+  const today=new Date();
+  // Période du voyage (départ → départ + jours planifiés)
+  let tripStart=null,tripEnd=null;
+  if(currentTripId&&st.departureDate){
+    tripStart=new Date(st.departureDate+'T00:00:00');
+    if(!isNaN(tripStart)){tripEnd=new Date(tripStart);tripEnd.setDate(tripStart.getDate()+Math.max((st.days||[]).length-1,0));}
+    else tripStart=null;
+  }
+  let cells=days.map(d=>`<div class="caldn">${d}</div>`).join('');
+  for(let i=0;i<sd;i++)cells+='<div class="cald om"></div>';
+  for(let d=1;d<=last;d++){
+    const isTd=d===today.getDate()&&calM===today.getMonth()&&calY===today.getFullYear();
+    const cur=new Date(calY,calM,d);
+    const inTrip=tripStart&&cur>=tripStart&&cur<=tripEnd;
+    cells+=`<div class="cald${isTd?' tod':''}${inTrip&&!isTd?' trip':''}">${d}</div>`;
+  }
+  document.getElementById('calEl').innerHTML=`<div class="calh"><button onclick="chgM(-1)" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:15px">‹</button><span>${months[calM]} ${calY}</span><button onclick="chgM(1)" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:15px">›</button></div><div class="calg">${cells}</div>`;
+}
+function chgM(d){calM+=d;if(calM>11){calM=0;calY++;}if(calM<0){calM=11;calY--;}renderCal();}
+
+// DASHBOARD
+function renderDash(){
+  const ti=st.ideas.length,cities=[...new Set(st.ideas.map(i=>i.city).filter(Boolean))].length;
+  const tb=st.budget.reduce((s,b)=>s+eurOf(b),0)+planningCost();
+  const od=st.objectives.filter(o=>o.done).length;
+  const scDefs=[
+    {l:'Idées',v:ti,sub:'enregistrées',c:'var(--red)',bg:'sc-1'},
+    {l:'Villes',v:cities,sub:'à visiter',c:'var(--gold)',bg:'sc-2'},
+    {l:'Jours',v:st.days.length,sub:'planifiés',c:'var(--indigo)',bg:'sc-3'},
+    {l:'Dépenses',v:fmtCost(tb),sub:'enregistrées',c:'var(--moss)',bg:'sc-4'},
+    {l:'Objectifs',v:od+'/'+st.objectives.length,sub:'accomplis',c:'var(--red-mid)',bg:'sc-5'},
+    {l:'Favoris',v:st.ideas.filter(i=>i.favorite).length,sub:'sélectionnés',c:'var(--washi-dk)',bg:'sc-6'}
+  ];
+  document.getElementById('dsh-stats').innerHTML=scDefs.map(s=>`<div class="sc ${s.bg}">
+    <div class="si0">${s.l}</div>
+    <div class="sv">${s.v}</div>
+    <div class="slb">${s.sub}</div>
+  </div>`).join('');
+  renderCal();
+  const objEl=document.getElementById('dsh-obj');
+  if(objEl)objEl.innerHTML=st.objectives.slice(0,4).map(o=>`<div class="oi${o.done?' done':''}" onclick="toggleObj('${o.id}')"><div class="ock">${o.done?'&#10003;':''}</div><div class="ot">${o.text}</div></div>`).join('')||'<div class="tm tsm">Aucun objectif</div>';
+  const favEl=document.getElementById('dsh-fav');
+  const favs=st.ideas.filter(i=>i.favorite).slice(0,3);
+  favEl.innerHTML=favs.length?favs.map(f=>`<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)">
+<div style="width:8px;height:8px;border-radius:50%;background:${catColor(f.cat)};flex-shrink:0"></div>
+<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.title}</div><div style="font-size:11px;color:var(--text3);margin-top:1px">${f.city||f.cat}</div></div>
+</div>`).join(''):'<div style="padding:12px 0;font-size:12.5px;color:var(--text3)">Aucun favori encore &mdash; marquez des idées comme favorites !</div>';
+  const cats=['hotels','restaurants','activites','transports','shopping','divers'];
+  const cln={hotels:'Hôtels',restaurants:'Restaurants',activites:'Activités',transports:'Transports',shopping:'Shopping',divers:'Divers'};
+  const clc=['#2A3858','#C0392B','#C8A050','#3A5A38','#E8756A','#B8A898'];
+  const byCat=planningCostByCat();
+  const tots=cats.map(c=>st.budget.filter(b=>b.cat===c).reduce((s,b)=>s+eurOf(b),0)+byCat[c]);
+  const mx=Math.max(...tots,1);
+  document.getElementById('dsh-bud').innerHTML=cats.map((c,i)=>`<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>${cln[c]}</span><span class="tm">${fmtCost(tots[i])}</span></div><div class="prb"><div class="prf" style="width:${tots[i]/mx*100}%;background:${clc[i]}"></div></div></div>`).join('');
+  const pItems=[{l:'Idées ajoutées',v:ti,mx:Math.max(ti,1),c:'var(--indigo)'},{l:'Jours planifiés',v:Math.min(st.days.length,30),mx:30,c:'var(--moss)'},{l:'Budget saisi',v:Math.min(tb,st.totalBudget),mx:st.totalBudget,c:'var(--gold)'},{l:'Objectifs accomplis',v:od,mx:Math.max(st.objectives.length,1),c:'var(--red)'}];
+  document.getElementById('dsh-prog').innerHTML=pItems.map(p=>`<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px"><span style="color:var(--text)">${p.l}</span><span style="color:var(--text3);font-size:11px">${p.v}/${p.mx}</span></div><div class="prb"><div class="prf" style="width:${p.v/p.mx*100}%;background:${p.c}"></div></div></div>`).join('');
+}
+
+// IDEAS
+function showAddIdea(id){
+  document.getElementById('iid').value=id||'';
+  document.getElementById('midt').textContent=id?'Modifier l\'idée':'Nouvelle idée';
+  document.getElementById('atrb').style.display=id?'inline-flex':'none';
+  if(id){
+    const x=st.ideas.find(i=>i.id===id);if(!x)return;
+    ['iti','ica','ide','ici','iaddr','ico','idu','ipr','irt','iul','ino','itg0','ilat','ilng'].forEach((f,i)=>{
+      const flds=['title','cat','desc','city','addr','cost','duration','priority','rating','url','note','tags','lat','lng'];
+      const el=document.getElementById(f);if(el)el.value=x[flds[i]]||'';
+    });
+  }else{['iti','ide','ici','iaddr','ico','idu','irt','iul','ino','itg0','ilat','ilng'].forEach(f=>{const el=document.getElementById(f);if(el)el.value='';});document.getElementById('ipr').value='haute';document.getElementById('ica').value='';}
+  om('m-idea');
+}
+function saveIdea(){
+  const title=document.getElementById('iti').value.trim();
+  if(!title){toast('Titre requis','e');return;}
+  const id=document.getElementById('iid').value;
+  const f={title,cat:document.getElementById('ica').value,desc:document.getElementById('ide').value,city:document.getElementById('ici').value,addr:document.getElementById('iaddr').value,cost:document.getElementById('ico').value,duration:document.getElementById('idu').value,priority:document.getElementById('ipr').value,rating:document.getElementById('irt').value,url:document.getElementById('iul').value,note:document.getElementById('ino').value,tags:document.getElementById('itg0').value,lat:document.getElementById('ilat')?document.getElementById('ilat').value:'',lng:document.getElementById('ilng')?document.getElementById('ilng').value:''};
+  if(id){const i=st.ideas.findIndex(x=>x.id===id);if(i!==-1)st.ideas[i]={...st.ideas[i],...f};}
+  else st.ideas.push({id:uid(),...f,favorite:false,date:new Date().toISOString()});
+  save();cm('m-idea');renderIdeas();updBadges();toast('Enregistré avec succès','s');if(mapInitialized)refreshMarkers();
+}
+function delIdea(id){if(!confirm('Supprimer ?'))return;st.ideas=st.ideas.filter(i=>i.id!==id);save();renderIdeas();updBadges();}
+function togFav(id){const i=st.ideas.find(x=>x.id===id);if(i){i.favorite=!i.favorite;save();renderIdeas();}}
+function toggleFav(){st.favFilter=!st.favFilter;document.getElementById('favbtn').style.background=st.favFilter?'var(--yellow)':'';renderIdeas();}
+function addToTrip(){
+  const id=document.getElementById('iid').value;
+  cm('m-idea');
+  addIdeaToTripDirect(id);
+}
+function addIdeaToTripDirect(id){
+  const x=st.ideas.find(i=>i.id===id);if(!x)return;
+  if(!st.days.length){addDay();toast('Jour 1 créé automatiquement','s');}
+  document.getElementById('daypick-idea-id').value=id;
+  document.getElementById('daypick-idea-name').textContent=x.title;
+  document.getElementById('daypick-time').value='10:00';
+  const sel=document.getElementById('daypick-day');
+  sel.innerHTML=st.days.map(d=>`<option value="${d.id}">${d.title}${d.city?' — '+d.city:''}</option>`).join('');
+  om('m-daypick');
+}
+function confirmAddToDay(){
+  const id=document.getElementById('daypick-idea-id').value;
+  const dayId=document.getElementById('daypick-day').value;
+  const time=document.getElementById('daypick-time').value;
+  const x=st.ideas.find(i=>i.id===id);
+  const day=st.days.find(d=>d.id===dayId);
+  if(!x||!day)return;
+  if(!day.activities)day.activities=[];
+  day.activities.push({id:uid(),ideaId:x.id,name:x.title,cat:x.cat,time,duration:x.duration||'',cost:x.cost||0,notes:x.desc||''});
+  sortDayByTime(day);
+  save();cm('m-daypick');toast(`"${x.title}" ajouté au planning`,'s');
+}
+// Trie les activités d'un jour par heure (celles sans heure restent à la fin)
+function sortDayByTime(day){
+  if(!day||!day.activities)return;
+  day.activities.sort((a,b)=>{
+    if(!a.time&&!b.time)return 0;
+    if(!a.time)return 1;
+    if(!b.time)return -1;
+    return a.time.localeCompare(b.time);
+  });
+}
+function renderIdeas(){
+  const cat=document.getElementById('fcat').value,pri=document.getElementById('fpri').value,srt=document.getElementById('fsrt').value,city=(document.getElementById('scity').value||'').toLowerCase();
+  let ideas=st.ideas.filter(i=>{
+    if(cat&&i.cat!==cat)return false;if(pri&&i.priority!==pri)return false;
+    if(city&&!(i.city||'').toLowerCase().includes(city)&&!i.title.toLowerCase().includes(city))return false;
+    if(st.favFilter&&!i.favorite)return false;return true;
+  });
+  if(srt==='alpha')ideas.sort((a,b)=>a.title.localeCompare(b.title));
+  else if(srt==='cout')ideas.sort((a,b)=>parseFloat(a.cost||0)-parseFloat(b.cost||0));
+  else if(srt==='prio'){const p={haute:0,moyenne:1,basse:2};ideas.sort((a,b)=>(p[a.priority]||1)-(p[b.priority]||1));}
+  else ideas.sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const g=document.getElementById('ig');
+  if(!ideas.length){g.innerHTML=`<div class="es" style="grid-column:1/-1"><div class="esi">IDEES</div><div class="est">Aucune idée trouvée</div><button class="btn bp mt16" onclick="showAddIdea()">+ Nouvelle idée</button></div>`;return;}
+  const plannedIds=new Set(),plannedNames=new Set();
+  (st.days||[]).forEach(d=>(d.activities||[]).forEach(a=>{if(a.ideaId)plannedIds.add(a.ideaId);plannedNames.add((a.name||'').toLowerCase());}));
+  g.innerHTML=ideas.map(i=>`
+    <div class="ic0" style="--cc:${catColor(i.cat)}">
+      <div class="ich"><div class="ict">${i.title}</div><div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${plannedIds.has(i.id)||plannedNames.has(i.title.toLowerCase())?'<span class="icc" style="background:var(--moss-lt);color:var(--moss)">Planifié</span>':''}<span class="icc">${catLabel(i.cat)}</span></div></div>
+      ${i.desc?`<div class="icd">${i.desc}</div>`:''}
+      <div class="icm">
+        ${i.city?`<span class="itg">${i.city}</span>`:''}
+        ${i.cost&&parseFloat(i.cost)>0?`<span class="itg">${fmtCost(i.cost)}</span>`:'<span class="itg">Gratuit</span>'}
+        ${i.rating?`<span class="itg">${i.rating}/5</span>`:''}
+      </div>
+      <div class="ica">
+        <button class="btn bs bsm" onclick="showAddIdea('${i.id}')">Modifier</button>
+        <button class="btn bred-lt bsm" onclick="addIdeaToTripDirect('${i.id}')">+ Voyage</button>
+        <button class="btn bsm" onclick="togFav('${i.id}')" style="background:${i.favorite?'var(--gold-lt)':'var(--surface2)'};border:1.5px solid ${i.favorite?'var(--gold)':'var(--border)'};color:${i.favorite?'var(--gold-dk)':'var(--text3)'}">${i.favorite?'Favori':'Favori'}</button>
+        ${i.url?`<a href="${i.url}" target="_blank" class="btn bs bsm">Voir</a>`:''}
+        <button class="btn bs bsm" style="color:var(--red)" onclick="delIdea('${i.id}')">Supprimer</button>
+      </div>
+    </div>`).join('');
+}
+function updBadges(){
+  const bdg=document.getElementById('bdg-ideas');
+  if(bdg)bdg.textContent=st.ideas.length;
+  document.querySelectorAll('.cat-bdg').forEach(el=>{
+    const cat=el.dataset.cat;
+    el.textContent=st.ideas.filter(i=>i.cat===cat).length;
+  });
+}
+
+// PLANNING
+function updateDep(val){
+  if(!val)return;
+  st.departureDate=val;
+  renumberDays();
+  save();renderPlanning();initCountdown();toast('Date de départ mise à jour','s');
+}
+
+function renumberDays(){
+  const dep=new Date(st.departureDate||'2027-10-01');
+  st.days.forEach((d,i)=>{
+    d.number=i+1;
+    const dt=new Date(dep);dt.setDate(dep.getDate()+i);
+    const ds=dt.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+    d.title=`Jour ${i+1} — ${ds}`;
+  });
+}
+function addDay(afterId){
+  const newDay={id:uid(),number:0,title:'',city:'',activities:[]};
+  if(afterId){
+    const idx=st.days.findIndex(d=>d.id===afterId);
+    if(idx!==-1){st.days.splice(idx+1,0,newDay);}
+    else st.days.push(newDay);
+  } else {
+    st.days.push(newDay);
+  }
+  renumberDays();
+  save();renderPlanning();toast(`Jour ${newDay.number} ajouté`);
+}
+function showAddAct(dayId){
+  if(!st.days.length){toast('Créez d\'abord un jour dans le planning','e');return;}
+  document.getElementById('acday').value=dayId||'';
+  om('m-actchoice');
+}
+function showAddActForm(dayId){
+  document.getElementById('aid').value='';
+  ['aname','adur','anotes','aurl'].forEach(f=>document.getElementById(f).value='');
+  document.getElementById('atm').value='10:00';document.getElementById('acost').value='';
+  const ds=document.getElementById('aday');
+  ds.innerHTML=st.days.map(d=>`<option value="${d.id}" ${d.id===dayId?'selected':''}>${d.title}</option>`).join('');
+  om('m-act');
+}
+function showPickIdea(dayId){
+  if(!st.ideas.length){toast('Aucune idée enregistrée — créez-en d\'abord','e');return;}
+  const sel=document.getElementById('pi-idea');
+  sel.innerHTML=[...st.ideas].sort((a,b)=>a.title.localeCompare(b.title)).map(i=>`<option value="${i.id}">${i.title}${i.city?' — '+i.city:''}</option>`).join('');
+  const ds=document.getElementById('pi-day');
+  ds.innerHTML=st.days.map(d=>`<option value="${d.id}" ${d.id===dayId?'selected':''}>${d.title}${d.city?' — '+d.city:''}</option>`).join('');
+  document.getElementById('pi-time').value='10:00';
+  om('m-pickidea');
+}
+function confirmPickIdea(){
+  const idea=st.ideas.find(i=>i.id===document.getElementById('pi-idea').value);
+  const day=st.days.find(d=>d.id===document.getElementById('pi-day').value);
+  if(!idea||!day)return;
+  if(!day.activities)day.activities=[];
+  day.activities.push({id:uid(),ideaId:idea.id,name:idea.title,cat:idea.cat,time:document.getElementById('pi-time').value,duration:idea.duration||'',cost:idea.cost||0,notes:idea.desc||'',url:idea.url||''});
+  sortDayByTime(day);
+  save();cm('m-pickidea');renderPlanning();toast(`"${idea.title}" ajouté au planning`,'s');
+}
+function saveAct(){
+  const name=document.getElementById('aname').value.trim();if(!name){toast('Nom requis','e');return;}
+  const dayId=document.getElementById('aday').value,day=st.days.find(d=>d.id===dayId);if(!day)return;
+  if(!day.activities)day.activities=[];
+  const id=document.getElementById('aid').value;
+  const act={id:id||uid(),name,time:document.getElementById('atm').value,duration:document.getElementById('adur').value,cost:document.getElementById('acost').value,cat:document.getElementById('acat').value,notes:document.getElementById('anotes').value,url:document.getElementById('aurl').value};
+  if(id){const i=day.activities.findIndex(a=>a.id===id);if(i!==-1){act.ideaId=day.activities[i].ideaId;day.activities[i]=act;}}else day.activities.push(act);
+  // Nouvelle activité → lier à une idée existante, ou en créer une
+  let ideaAdded=false;
+  if(!id){
+    const existing=st.ideas.find(i=>(i.title||'').toLowerCase()===name.toLowerCase());
+    if(existing){act.ideaId=existing.id;}
+    else{
+      const idea={id:uid(),title:name,cat:act.cat,desc:act.notes||'',city:day.city||'',addr:'',cost:act.cost||'',duration:act.duration||'',priority:'moyenne',rating:'',url:act.url||'',note:'',tags:'',lat:'',lng:'',favorite:false,date:new Date().toISOString()};
+      st.ideas.push(idea);
+      act.ideaId=idea.id;
+      if(idea.city)geocodeIdea(idea);
+      updBadges();
+      ideaAdded=true;
+    }
+  }
+  sortDayByTime(day);
+  save();cm('m-act');renderPlanning();toast(ideaAdded?'Activité enregistrée + ajoutée aux idées':'Activité enregistrée','s');
+}
+// Géocode une idée en arrière-plan (ville + destination du voyage)
+async function geocodeIdea(idea){
+  try{
+    const dest=(tripMeta().dest||'').trim();
+    let res=dest?await nominatim(idea.city+', '+dest):null;
+    if(!res)res=await nominatim(idea.city);
+    if(res&&res.lat){
+      idea.lat=parseFloat(res.lat).toFixed(4);
+      idea.lng=parseFloat(res.lon).toFixed(4);
+      save();
+      if(mapInitialized)refreshMarkers();
+    }
+  }catch(e){}
+}
+function delAct(dayId,actId){const d=st.days.find(x=>x.id===dayId);if(!d)return;d.activities=d.activities.filter(a=>a.id!==actId);save();renderPlanning();}
+function delDay(id){
+  if(!confirm('Supprimer ce jour et ses activités ?'))return;
+  st.days=st.days.filter(d=>d.id!==id);
+  renumberDays();
+  save();renderPlanning();
+  toast('Jour supprimé');
+}
+function editAct(dayId,actId){
+  const d=st.days.find(x=>x.id===dayId),a=d&&d.activities.find(x=>x.id===actId);if(!a)return;
+  document.getElementById('aid').value=actId;document.getElementById('aname').value=a.name;document.getElementById('atm').value=a.time||'10:00';document.getElementById('adur').value=a.duration||'';document.getElementById('acost').value=a.cost||'';document.getElementById('acat').value=a.cat||'activite';document.getElementById('anotes').value=a.notes||'';document.getElementById('aurl').value=a.url||'';
+  const ds=document.getElementById('aday');ds.innerHTML=st.days.map(d=>`<option value="${d.id}" ${d.id===dayId?'selected':''}>${d.title}</option>`).join('');
+  om('m-act');
+}
+// Réordonner des jours entiers par glisser-déposer
+let dragDayMoveId=null;
+function dsDay(e,id){
+  dragDayMoveId=id;
+  e.dataTransfer.effectAllowed='move';
+  e.stopPropagation();
+}
+function dovDay(e,id){
+  if(!dragDayMoveId||id===dragDayMoveId)return;
+  e.preventDefault();
+  document.querySelectorAll('.db').forEach(x=>x.style.outline='');
+  const el=document.getElementById('db-'+id);
+  if(el)el.style.outline='2px solid var(--red)';
+}
+function ddrDay(e,id){
+  if(!dragDayMoveId)return;
+  e.preventDefault();e.stopPropagation();
+  document.querySelectorAll('.db').forEach(x=>x.style.outline='');
+  const from=st.days.findIndex(d=>d.id===dragDayMoveId),to=st.days.findIndex(d=>d.id===id);
+  dragDayMoveId=null;
+  if(from<0||to<0||from===to)return;
+  const[d]=st.days.splice(from,1);
+  st.days.splice(to,0,d);
+  renumberDays();
+  save();renderPlanning();
+  if(mapInitialized)drawRoute();
+  toast('Jour déplacé');
+}
+document.addEventListener('dragend',()=>{
+  dragDayMoveId=null;
+  document.querySelectorAll('.db').forEach(x=>x.style.outline='');
+});
+// Déplacements par boutons ↑↓ (indispensable sur mobile, où le drag ne marche pas)
+function moveDay(dayId,dir){
+  const i=st.days.findIndex(d=>d.id===dayId);
+  const j=i+dir;
+  if(i<0||j<0||j>=st.days.length)return;
+  const[d]=st.days.splice(i,1);
+  st.days.splice(j,0,d);
+  renumberDays();save();renderPlanning();
+  if(mapInitialized)drawRoute();
+}
+function moveAct(dayId,actId,dir){
+  const day=st.days.find(d=>d.id===dayId);if(!day)return;
+  const i=day.activities.findIndex(a=>a.id===actId);if(i<0)return;
+  const j=i+dir;
+  if(j>=0&&j<day.activities.length){
+    [day.activities[i],day.activities[j]]=[day.activities[j],day.activities[i]];
+  }else{
+    // Bord du jour → bascule vers le jour précédent / suivant
+    const di=st.days.findIndex(d=>d.id===dayId),td=st.days[di+dir];
+    if(!td)return;
+    if(!td.activities)td.activities=[];
+    const[a]=day.activities.splice(i,1);
+    if(dir<0)td.activities.push(a);else td.activities.unshift(a);
+  }
+  save();renderPlanning();
+  if(mapInitialized)drawRoute();
+}
+
+let dragId=null,dragDay=null,dragOverId=null;
+function ds(e,aid,did){dragId=aid;dragDay=did;e.dataTransfer.effectAllowed='move';setTimeout(()=>{const el=document.getElementById('a-'+aid);if(el)el.classList.add('dg0');},0);}
+function dov(e,did){e.preventDefault();document.querySelectorAll('.dy').forEach(b=>b.classList.remove('dov'));document.getElementById('dy-'+did)?.classList.add('dov');}
+function dovAct(e,aid){e.preventDefault();e.stopPropagation();dragOverId=aid;document.querySelectorAll('.ai').forEach(a=>a.style.borderTop='');const el=document.getElementById('a-'+aid);if(el&&aid!==dragId)el.style.borderTop='2px solid var(--blue-dk)';}
+function ddr(e,did){
+  e.preventDefault();document.querySelectorAll('.dy').forEach(b=>b.classList.remove('dov'));document.querySelectorAll('.ai').forEach(a=>a.style.borderTop='');
+  if(!dragId)return;
+  const fd=st.days.find(d=>d.id===dragDay),td=st.days.find(d=>d.id===did);if(!fd||!td)return;
+  const ai=fd.activities.findIndex(a=>a.id===dragId);if(ai===-1)return;
+  const[act]=fd.activities.splice(ai,1);
+  if(dragOverId&&did===dragDay){const ti=td.activities.findIndex(a=>a.id===dragOverId);td.activities.splice(ti>=0?ti:td.activities.length,0,act);}
+  else{td.activities.push(act);}
+  dragId=null;dragDay=null;dragOverId=null;save();renderPlanning();toast('Activité déplacée');
+}
+function renderPlanning(){
+  const el=document.getElementById('planEl');
+  const depInp=document.getElementById('depDate');
+  if(depInp)depInp.value=st.departureDate||'2027-10-01';
+  if(!st.days.length){el.innerHTML=`<div class="es"><div class="esi">&#8212;</div><div class="est">Aucun jour planifié</div><p style="font-size:12.5px;margin-bottom:16px">Cliquez sur "+ Jour" pour commencer</p></div>`;return;}
+  if(!st.collapsedDays)st.collapsedDays={};
+  const modeOpts=(sel)=>Object.entries(MODE_STYLE).map(([k,s])=>`<option value="${k}" ${k===sel?'selected':''}>${s.ic} ${s.label}</option>`).join('');
+  el.innerHTML=st.days.map(day=>{
+    const tc=(day.activities||[]).reduce((s,a)=>s+parseFloat(a.cost||0),0);
+    return`<div class="db" id="db-${day.id}" ondragover="dovDay(event,'${day.id}')" ondrop="ddrDay(event,'${day.id}')"><div class="dh" onclick="tgDay('${day.id}')">
+      <span class="drag-handle" draggable="true" ondragstart="dsDay(event,'${day.id}')" title="Glisser pour déplacer ce jour" style="cursor:grab">&#8942;&#8942;</span>
+      <div class="dn">${day.number}</div>
+      <div style="flex:1;min-width:0">
+        <div class="dt">${day.title}</div>
+        ${day.city?`<div class="dm">📍 ${day.city}</div>`:'<div class="dm" style="color:var(--text3);font-style:italic">Cliquer ✏️ pour ajouter une ville</div>'}
+      </div>
+      <div class="dm" style="white-space:nowrap">${(day.activities||[]).length} act. · ${fmtCost(tc)}</div>
+      <button class="ib" onclick="event.stopPropagation();moveDay('${day.id}',-1)" title="Monter ce jour">&#8593;</button>
+      <button class="ib" onclick="event.stopPropagation();moveDay('${day.id}',1)" title="Descendre ce jour">&#8595;</button>
+      <select class="ib" style="border:1px solid var(--border);border-radius:5px;background:var(--surface);cursor:pointer" title="Mode de déplacement du jour (trait sur la carte)" onclick="event.stopPropagation()" onchange="setDayMode('${day.id}',this.value)">${modeOpts(day.mode||'walk')}</select>
+      <button class="ib" onclick="event.stopPropagation();editDay('${day.id}')" title="Modifier la ville">📍 Ville</button>
+      <button class="ib" onclick="event.stopPropagation();showAddAct('${day.id}')" title="Ajouter une activité">+ Activité</button>
+      <button class="ib" style="color:var(--red)" onclick="event.stopPropagation();delDay('${day.id}')" title="Supprimer ce jour">Supprimer</button>
+    </div>
+    <div class="dy" id="dy-${day.id}" ondragover="dov(event,'${day.id}')" ondrop="ddr(event,'${day.id}')">
+      ${(day.activities||[]).map(a=>`<div class="ai" id="a-${a.id}" draggable="true" ondragstart="ds(event,'${a.id}','${day.id}')" ondragover="dovAct(event,'${a.id}')" ondrop="ddr(event,'${day.id}')">
+        <div class="drag-handle">&#8942;&#8942;</div>
+        <div style="width:22px;height:22px;border-radius:4px;background:${catBg(a.cat)};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:${catColor(a.cat)};flex-shrink:0">${catIc(a.cat)}</div>
+        <div class="acd" style="background:${catColor(a.cat)}"></div>
+        <div class="ain">
+          <div class="an">${a.name}</div>
+          <div class="ad">${a.time||''} ${a.duration?'· '+a.duration:''}</div>
+        </div>
+        ${a.cost?`<div class="ac">${fmtCost(a.cost)}</div>`:''}
+        ${a.url?`<a href="${a.url}" target="_blank" class="ib" style="color:var(--blue-dk);text-decoration:none;font-size:13px" title="${a.url}">🔗</a>`:''}
+        <div class="aa">
+          <button class="ib" onclick="moveAct('${day.id}','${a.id}',-1)" title="Monter">&#8593;</button>
+          <button class="ib" onclick="moveAct('${day.id}','${a.id}',1)" title="Descendre">&#8595;</button>
+          <button class="ib" onclick="editAct('${day.id}','${a.id}')">Modifier</button>
+          <button class="ib" style="color:var(--red)" onclick="delAct('${day.id}','${a.id}')">Suppr.</button>
+        </div>
+      </div>`).join('')}
+      ${!(day.activities||[]).length?'<div class="dz">Glissez des activités ici</div>':''}
+    </div></div>
+    <div class="day-insert-btn" onclick="addDay('${day.id}')" title="Insérer un jour ici">
+      <span>+ Insérer un jour ici</span>
+    </div>`;
+  }).join('');
+  restoreCollapsed();
+}
+function restoreCollapsed(){
+  if(!st.collapsedDays)return;
+  Object.keys(st.collapsedDays).forEach(id=>{
+    const b=document.getElementById('dy-'+id);
+    if(b)b.style.display='none';
+  });
+}
+function editDay(id){
+  const day=st.days.find(d=>d.id===id);if(!day)return;
+  document.getElementById('dayid').value=id;
+  document.getElementById('dcity').value=day.city||'';
+  om('m-day');
+  setTimeout(()=>document.getElementById('dcity').focus(),60);
+}
+function saveDayCity(){
+  const id=document.getElementById('dayid').value;
+  const day=st.days.find(d=>d.id===id);if(!day)return;
+  day.city=document.getElementById('dcity').value.trim();
+  save();cm('m-day');renderPlanning();toast('Ville mise à jour','s');
+}
+function tgDay(id){
+  const b=document.getElementById('dy-'+id);
+  if(!b)return;
+  const isNowHidden = b.style.display!=='none';
+  b.style.display = isNowHidden ? 'none' : '';
+  if(!st.collapsedDays)st.collapsedDays={};
+  if(isNowHidden) st.collapsedDays[id]=true;
+  else delete st.collapsedDays[id];
+  save();
+}
+
+// BUDGET
+// Coût total des activités placées dans le planning (compté comme dépense)
+function planningCost(){
+  return (st.days||[]).reduce((s,d)=>s+(d.activities||[]).reduce((x,a)=>x+parseFloat(a.cost||0),0),0);
+}
+// Montant d'une dépense converti en euros (saisie possible en devise locale)
+function eurOf(b){
+  const a=parseFloat(b.amount||0);
+  return b.cur==='LOC'?a/getRate():a;
+}
+// Affichage double devise : "50 € / ¥8 250" (euro seul si voyage en zone euro)
+function fmtBoth(eur){
+  if(getCur()==='€')return fmtCost(eur);
+  return fmtCost(eur)+' / '+getCur()+Math.round(eur*getRate()).toLocaleString('fr-FR');
+}
+// Catégorie budget correspondant à une catégorie d'activité
+function actBudgetCat(c){
+  return {restaurant:'restaurants',hotel:'hotels',transport:'transports',shopping:'shopping'}[c]||'activites';
+}
+// Coûts du planning ventilés par catégorie de budget
+function planningCostByCat(){
+  const m={hotels:0,restaurants:0,activites:0,transports:0,shopping:0,divers:0};
+  (st.days||[]).forEach(d=>(d.activities||[]).forEach(a=>{m[actBudgetCat(a.cat)]+=parseFloat(a.cost||0);}));
+  return m;
+}
+function setTotalBudget(v){
+  st.totalBudget=parseFloat(v)||6000;
+  save();
+  const m=tripMeta();
+  if(m.id){m.budget=st.totalBudget;saveTrips();}
+  renderBudget();renderDash();
+}
+function showAddBudget(id){
+  document.getElementById('bid').value=id||'';
+  // Option devise locale selon le voyage
+  const locOpt=document.getElementById('bcur-loc');
+  const cur=getCur();
+  locOpt.textContent=cur+' — devise locale';
+  locOpt.disabled=cur==='€';
+  if(id){const x=st.budget.find(b=>b.id===id);if(x){document.getElementById('bde').value=x.desc||'';document.getElementById('bca').value=x.cat||'divers';document.getElementById('bam').value=x.amount||'';document.getElementById('bdt').value=x.date||'';document.getElementById('bcur').value=x.cur==='LOC'?'LOC':'EUR';}}
+  else{['bde','bam'].forEach(f=>document.getElementById(f).value='');document.getElementById('bdt').value=new Date().toISOString().slice(0,10);document.getElementById('bca').value='divers';document.getElementById('bcur').value='EUR';}
+  om('m-bud');
+}
+function saveBud(){
+  const desc=document.getElementById('bde').value.trim(),am=document.getElementById('bam').value;
+  if(!desc||!am){toast('Champs requis','e');return;}
+  const id=document.getElementById('bid').value;
+  const item={id:id||uid(),desc,cat:document.getElementById('bca').value,amount:am,cur:document.getElementById('bcur').value,date:document.getElementById('bdt').value};
+  if(id){const i=st.budget.findIndex(b=>b.id===id);if(i!==-1)st.budget[i]=item;}else st.budget.push(item);
+  save();cm('m-bud');renderBudget();toast('Dépense enregistrée','s');
+}
+function delBud(id){st.budget=st.budget.filter(b=>b.id!==id);save();renderBudget();}
+function swTab(prefix,name,btn){
+  const pg=btn.closest('.pg');
+  pg.querySelectorAll('.tab').forEach(b=>b.classList.remove('act'));btn.classList.add('act');
+  pg.querySelectorAll('.tc').forEach(t=>t.classList.remove('act'));
+  const el=document.getElementById(prefix+'-'+name);if(el)el.classList.add('act');
+  if(name==='chart')renderBudChart();
+}
+function renderBudget(){
+  const manual=st.budget.reduce((s,b)=>s+eurOf(b),0);
+  const plan=planningCost();
+  const total=manual+plan,rem=st.totalBudget-total;
+  document.getElementById('bov').innerHTML=`
+    <div class="bst"><div class="bsl">Budget cible</div><div class="bsv">${fmtCost(st.totalBudget)}</div>${getCur()!=='€'?`<div style="font-size:11px;color:var(--text3);margin-top:3px">${getCur()}${Math.round(st.totalBudget*getRate()).toLocaleString('fr-FR')}</div>`:''}</div>
+    <div class="bst"><div class="bsl">Dépenses</div><div class="bsv">${fmtCost(total)}</div><div style="font-size:11px;color:var(--text3);margin-top:3px">${getCur()!=='€'?getCur()+Math.round(total*getRate()).toLocaleString('fr-FR'):''}${plan>0?(getCur()!=='€'?' · ':'')+'dont planning : '+fmtCost(plan):''}</div><div class="bb mt8"><div class="bbf" style="width:${Math.min(100,total/st.totalBudget*100)}%;background:var(--red)"></div></div></div>
+    <div class="bst" style="background:${rem>=0?'var(--moss-lt)':'var(--red-lt)'}"><div class="bsl">Restant</div><div class="bsv" style="color:${rem>=0?'var(--moss)':'var(--red)'}">${fmtCost(rem)}</div>${getCur()!=='€'?`<div style="font-size:11px;color:var(--text3);margin-top:3px">${getCur()}${Math.round(rem*getRate()).toLocaleString('fr-FR')}</div>`:''}</div>`;
+  const cln={hotels:'Hôtels',restaurants:'Restaurants',activites:'Activités',transports:'Transports',shopping:'Shopping',divers:'Divers'};
+  const tb=document.getElementById('btb');
+  const byCat=planningCostByCat();
+  const planRows=Object.entries(byCat).filter(([c,v])=>v>0).map(([c,v])=>`<tr style="background:var(--washi-lt)">
+    <td style="font-weight:600;color:var(--indigo)">${cln[c]}</td>
+    <td>Depuis le planning (automatique)</td>
+    <td style="color:var(--text3)">—</td>
+    <td style="font-weight:600;color:var(--indigo)">${fmtBoth(v)}</td>
+    <td><span style="font-size:10px;color:var(--text3)">auto</span></td>
+  </tr>`).join('');
+  if(!st.budget.length&&!plan){tb.innerHTML=`<tr><td colspan="5" style="text-align:center;padding:36px;color:var(--text3)">Aucune dépense</td></tr>`;return;}
+  tb.innerHTML=planRows+[...st.budget].sort((a,b)=>new Date(b.date)-new Date(a.date)).map(b=>`<tr>
+    <td>${cln[b.cat]||b.cat}</td><td>${b.desc}</td>
+    <td style="color:var(--text3)">${b.date?new Date(b.date).toLocaleDateString('fr-FR'):'—'}</td>
+    <td style="font-weight:600;color:var(--moss)">${fmtBoth(eurOf(b))}</td>
+    <td><button class="ib" onclick="showAddBudget('${b.id}')">Modifier</button><button class="ib" style="color:var(--red)" onclick="delBud('${b.id}')">Suppr.</button></td>
+  </tr>`).join('');
+  const inp=document.getElementById('tbinp');if(inp&&!inp.value)inp.value=st.totalBudget;
+}
+function renderBudChart(){
+  const cats=['hotels','restaurants','activites','transports','shopping','divers'];
+  const cln=['Hôtels','Restaurants','Activités','Transports','Shopping','Divers'];
+  const clc=['#2A3858','#C0392B','#C8A050','#3A5A38','#E8756A','#B8A898'];
+  const byCat=planningCostByCat();
+  const tots=cats.map(c=>st.budget.filter(b=>b.cat===c).reduce((s,b)=>s+eurOf(b),0)+byCat[c]);
+  const mx=Math.max(...tots,1);
+  document.getElementById('bch').innerHTML=cats.map((c,i)=>`<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+    <div style="width:110px;font-size:12px;color:var(--text2);text-align:right">${cln[i]}</div>
+    <div style="flex:1;height:32px;background:var(--surface2);border-radius:5px;overflow:hidden">
+      <div style="height:100%;width:${tots[i]/mx*100}%;background:${clc[i]};border-radius:5px;display:flex;align-items:center;padding:0 8px;color:#fff;font-size:11px;font-weight:600;transition:width .6s">${tots[i]>0?fmtCost(tots[i]):''}</div>
+    </div></div>`).join('');
+}
+
+// TRANSPORT
+function showAddTr(id){
+  document.getElementById('trid').value=id||'';
+  if(id){const t=st.transport.find(x=>x.id===id);if(t){document.getElementById('trna').value=t.name||'';document.getElementById('trty').value=t.type||'train';document.getElementById('trda').value=t.date||'';document.getElementById('trfr').value=t.from||'';document.getElementById('trto').value=t.to||'';document.getElementById('trtf').value=t.timeFrom||'';document.getElementById('trtt').value=t.timeTo||'';document.getElementById('trpr').value=t.price||'';document.getElementById('trco').value=t.company||'';document.getElementById('trbk').value=t.booked||'pending';}}
+  else{['trna','trfr','trto','trco'].forEach(f=>document.getElementById(f).value='');['trda','trtf','trtt','trpr'].forEach(f=>document.getElementById(f).value='');document.getElementById('trty').value='train';document.getElementById('trbk').value='pending';}
+  om('m-tr');
+}
+function saveTr(){
+  const name=document.getElementById('trna').value.trim();if(!name){toast('Nom requis','e');return;}
+  const id=document.getElementById('trid').value;
+  const item={id:id||uid(),name,type:document.getElementById('trty').value,date:document.getElementById('trda').value,from:document.getElementById('trfr').value,to:document.getElementById('trto').value,timeFrom:document.getElementById('trtf').value,timeTo:document.getElementById('trtt').value,price:document.getElementById('trpr').value,company:document.getElementById('trco').value,booked:document.getElementById('trbk').value};
+  if(id){const i=st.transport.findIndex(t=>t.id===id);if(i!==-1)st.transport[i]=item;}else st.transport.push(item);
+  save();cm('m-tr');renderTr();toast('Trajet enregistré','s');
+}
+function delTr(id){st.transport=st.transport.filter(t=>t.id!==id);save();renderTr();}
+function renderTr(){
+  const el=document.getElementById('trEl');
+  if(!st.transport.length){el.innerHTML=`<div class="es"><div class="esi">&#8212;</div><div class="est">Aucun trajet</div><button class="btn bp mt16" onclick="showAddTr()">+ Trajet</button></div>`;return;}
+  const tic={train:'Trn',shinkansen:'TGV',jr:'JR',metro:'MTR',bus:'Bus',avion:'Air',ferry:'Mer',voiture:'Car',autre:'Tr'};
+  const bl={pending:'⏳ À réserver',reserved:'✅ Réservé',inclus:'🎫 Pass'};
+  el.innerHTML=st.transport.map(t=>`<div class="tri">
+    <div class="tri-ic">${tic[t.type]||'Tr'}</div>
+    <div><div class="trn">${t.name}</div><div class="trd">${t.from&&t.to?t.from+' → '+t.to:''} ${t.timeFrom?'· '+t.timeFrom:''} ${t.timeTo?'→ '+t.timeTo:''} ${t.company?'· '+t.company:''} ${t.date?'· '+new Date(t.date).toLocaleDateString('fr-FR'):''}</div></div>
+    <span class="trb ${t.booked==='reserved'?'trb-r':'trb-p'}">${bl[t.booked]||'⏳'}</span>
+    <div style="display:flex;gap:4px;align-items:center">${t.price?`<span class="trp">${fmtCost(t.price)}</span>`:''}<button class="ib" onclick="showAddTr('${t.id}')">Modifier</button><button class="ib" style="color:var(--red)" onclick="delTr('${t.id}')">Suppr.</button></div>
+  </div>`).join('');
+}
+
+// CHECKLIST
+function renderCL(){
+  const ici={Documents:'Doc',Vêtements:'Vtm',Tech:'Tech',Santé:'San',Argent:'Arg',Pratique:'App'};
+  document.getElementById('clEl').innerHTML=Object.entries(st.checklist).map(([cat,items])=>{
+    const done=items.filter(i=>i.done).length;
+    return`<div class="clc"><div class="clch"><span class="clct">${cat}</span><span class="clcp">${done}/${items.length}</span></div>
+    <div style="height:4px;background:var(--border)"><div style="height:100%;width:${items.length?done/items.length*100:0}%;background:var(--moss);transition:width .5s"></div></div>
+    <div class="clb">${items.map(it=>{
+      const qty=it.qty||1;
+      if(qty>1){
+        const qd=it.qtyDone||0,full=qd>=qty;
+        return `<div class="cli">
+          <span style="width:15px;text-align:center;color:${full?'var(--moss)':'var(--border2)'};font-size:12px;flex-shrink:0">${full?'✓':'○'}</span>
+          <label style="${full?'color:var(--text3);text-decoration:line-through':''}">${it.text}</label>
+          <div style="display:flex;align-items:center;gap:2px;flex-shrink:0">
+            <button class="ib" onclick="ckQty('${cat}','${it.id}',-1)" style="padding:2px 6px">&minus;</button>
+            <span style="font-size:11px;font-weight:700;color:${full?'var(--moss)':'var(--text2)'};min-width:30px;text-align:center">${qd}/${qty}</span>
+            <button class="ib" onclick="ckQty('${cat}','${it.id}',1)" style="padding:2px 6px">+</button>
+          </div>
+          <button class="ib" onclick="delCk('${cat}','${it.id}')" style="font-size:10px">✕</button>
+        </div>`;
+      }
+      return `<div class="cli"><input type="checkbox" id="ck-${it.id}" ${it.done?'checked':''} onchange="tgCk('${cat}','${it.id}')"><label for="ck-${it.id}">${it.text}</label><button class="ib" onclick="delCk('${cat}','${it.id}')" style="font-size:10px">✕</button></div>`;
+    }).join('')}</div>
+    <div class="cladd"><input type="text" placeholder="Ajouter… (ex : T-shirts 7)" id="ca-${cat}" onkeypress="if(event.key==='Enter')addCk('${cat}')"><button class="btn bs bsm" onclick="addCk('${cat}')">+</button></div>
+    </div>`;
+  }).join('');
+}
+function tgCk(cat,id){const i=st.checklist[cat]?.find(x=>x.id===id);if(i){i.done=!i.done;save();renderCL();}}
+function delCk(cat,id){if(st.checklist[cat]){st.checklist[cat]=st.checklist[cat].filter(x=>x.id!==id);save();renderCL();}}
+function addCk(cat){
+  const inp=document.getElementById('ca-'+cat),t=inp?.value.trim();if(!t)return;
+  if(!st.checklist[cat])st.checklist[cat]=[];
+  // "T-shirts 7" → article avec quantité 7
+  const m=t.match(/^(.+?)\s+[x×]?(\d{1,3})$/i);
+  let text=t,qty=1;
+  if(m&&parseInt(m[2])>1){text=m[1].trim();qty=parseInt(m[2]);}
+  st.checklist[cat].push({id:uid(),text,done:false,qty,qtyDone:0});
+  inp.value='';save();renderCL();
+}
+function ckQty(cat,id,d){
+  const i=st.checklist[cat]?.find(x=>x.id===id);if(!i)return;
+  i.qtyDone=Math.max(0,Math.min(i.qty||1,(i.qtyDone||0)+d));
+  i.done=i.qtyDone>=(i.qty||1);
+  save();renderCL();
+}
+
+// OBJECTIVES
+function showAddObj(){document.getElementById('obt').value='';om('m-obj');}
+function saveObj(){const t=document.getElementById('obt').value.trim();if(!t){toast('Texte requis','e');return;}st.objectives.push({id:uid(),text:t,done:false});save();cm('m-obj');renderObj();toast('Objectif ajouté','s');}
+function toggleObj(id){const o=st.objectives.find(x=>x.id===id);if(o){o.done=!o.done;save();renderObj();}}
+function delObj(id){st.objectives=st.objectives.filter(o=>o.id!==id);save();renderObj();}
+function renderObj(){
+  const el=document.getElementById('objEl');
+  if(!st.objectives.length){el.innerHTML=`<div class="es"><div class="esi">&#8212;</div><div class="est">Aucun objectif</div><button class="btn bp mt16" onclick="showAddObj()">+ Objectif</button></div>`;return;}
+  const done=st.objectives.filter(o=>o.done).length;
+  el.innerHTML=`<div class="card mb16"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-weight:600">Progression</span><span class="tm tsm">${done}/${st.objectives.length}</span></div><div class="prb"><div class="prf" style="width:${st.objectives.length?done/st.objectives.length*100:0}%;background:var(--sage-dk)"></div></div></div>`+
+  st.objectives.map(o=>`<div class="oi${o.done?' done':''}"><div class="ock" onclick="toggleObj('${o.id}')">${o.done?'&#10003;':''}</div><div class="ot">${o.text}</div><button class="ib" onclick="delObj('${o.id}')">🗑</button></div>`).join('');
+}
+
+// NOTES
+function addNote(){const n={id:uid(),title:'Nouvelle note',content:'',date:new Date().toISOString()};st.notes.unshift(n);st.currentNote=n.id;save();renderNotes();loadNote(n.id);}
+function renderNotes(){
+  document.getElementById('nlEl').innerHTML=st.notes.map(n=>`<div class="nli${st.currentNote===n.id?' act':''}" onclick="loadNote('${n.id}')"><div class="nlt">${n.title||'Sans titre'}</div><div class="nlp">${n.date?new Date(n.date).toLocaleDateString('fr-FR'):''}</div></div>`).join('')||'<div style="padding:18px;text-align:center;color:var(--text3);font-size:12px">Aucune note</div>';
+}
+function loadNote(id){st.currentNote=id;const n=st.notes.find(x=>x.id===id);if(!n)return;document.getElementById('nti0').value=n.title||'';document.getElementById('nce').innerHTML=n.content||'';renderNotes();}
+function saveNote(){const n=st.notes.find(x=>x.id===st.currentNote);if(!n)return;n.title=document.getElementById('nti0').value;n.content=document.getElementById('nce').innerHTML;n.date=new Date().toISOString();save();}
+function delNote(){if(!st.currentNote||!confirm('Supprimer ?'))return;st.notes=st.notes.filter(n=>n.id!==st.currentNote);st.currentNote=st.notes[0]?.id||null;save();renderNotes();if(st.currentNote)loadNote(st.currentNote);else{document.getElementById('nti0').value='';document.getElementById('nce').innerHTML='';}}
+function nf(cmd){document.getElementById('nce').focus();document.execCommand(cmd,false,null);saveNote();}
+
+// GALLERY
+function uploadGallery(e){Array.from(e.target.files).forEach(f=>{const r=new FileReader();r.onload=ev=>{st.gallery.push({id:uid(),src:ev.target.result,name:f.name,date:new Date().toISOString()});save();renderGallery();};r.readAsDataURL(f);});}
+function renderGallery(){
+  const el=document.getElementById('gEl');
+  if(!st.gallery.length){el.innerHTML=`<div class="es" style="grid-column:1/-1"><div class="esi">GALERIE</div><div class="est">Galerie vide</div><p style="font-size:12px">Ajoutez vos photos d'inspiration</p></div>`;return;}
+  el.innerHTML=st.gallery.map(g=>`<div class="gi" onclick="viewPhoto('${g.id}')"><img src="${g.src}" alt="${g.name}" loading="lazy"></div>`).join('');
+}
+function viewPhoto(id){
+  const g=st.gallery.find(x=>x.id===id);if(!g)return;
+  const m=document.createElement('div');m.className='mb op';m.style.background='rgba(0,0,0,.85)';
+  m.innerHTML=`<div style="max-width:90%;max-height:90vh;position:relative"><img src="${g.src}" style="max-width:100%;max-height:80vh;border-radius:12px;display:block"><button onclick="this.closest('.mb').remove()" style="position:absolute;top:-14px;right:-14px;background:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px">✕</button><button onclick="delPhoto('${id}',this)" style="position:absolute;bottom:-38px;left:50%;transform:translateX(-50%);background:var(--rose-dk);color:#fff;border:none;padding:7px 16px;border-radius:7px;cursor:pointer;font-size:12px">🗑 Supprimer</button></div>`;
+  document.body.appendChild(m);m.addEventListener('click',e=>{if(e.target===m)m.remove();});
+}
+function delPhoto(id,btn){st.gallery=st.gallery.filter(g=>g.id!==id);save();renderGallery();btn.closest('.mb').remove();}
+
+// WEATHER — prévisions réelles Open-Meteo, calées sur dates + villes du planning
+const cityCoordCache={}, weatherCache={};
+let weatherSeq=0;
+
+// Code météo WMO → icône + description
+function wmo(c){
+  const m={
+    0:['☀️','Ciel dégagé'],1:['🌤','Plutôt dégagé'],2:['⛅','Partiellement nuageux'],3:['☁️','Couvert'],
+    45:['🌫','Brouillard'],48:['🌫','Brouillard givrant'],
+    51:['🌦','Bruine légère'],53:['🌦','Bruine'],55:['🌦','Bruine dense'],
+    56:['🌧','Bruine verglaçante'],57:['🌧','Bruine verglaçante'],
+    61:['🌧','Pluie faible'],63:['🌧','Pluie'],65:['🌧','Forte pluie'],
+    66:['🌧','Pluie verglaçante'],67:['🌧','Pluie verglaçante'],
+    71:['🌨','Neige faible'],73:['🌨','Neige'],75:['🌨','Forte neige'],77:['🌨','Grains de neige'],
+    80:['🌦','Averses'],81:['🌦','Averses'],82:['⛈','Fortes averses'],
+    85:['🌨','Averses de neige'],86:['🌨','Averses de neige'],
+    95:['⛈','Orages'],96:['⛈','Orages, grêle'],99:['⛈','Orages, grêle']
+  };
+  return m[c]||['🌡','—'];
+}
+function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function dayDateStr(idx){const d=new Date((st.departureDate||new Date().toISOString().slice(0,10))+'T12:00:00');d.setDate(d.getDate()+idx);return ymd(d);}
+
+// Coordonnées d'un jour : idée planifiée géolocalisée > ville géocodée > destination
+async function coordsForDay(day){
+  for(const a of (day.activities||[])){const i=ideaOfAct(a);if(i&&i.lat&&i.lng&&parseFloat(i.lat))return [parseFloat(i.lat),parseFloat(i.lng)];}
+  const city=(day.city||'').trim();
+  if(city){
+    if(cityCoordCache[city])return cityCoordCache[city];
+    const dest=(tripMeta().dest||'').trim();
+    let r=dest?await nominatim(city+', '+dest):null;
+    if(!r)r=await nominatim(city);
+    if(r&&r.lat){const c=[parseFloat(r.lat),parseFloat(r.lon)];cityCoordCache[city]=c;return c;}
+  }
+  const t=tripMeta();
+  if(t.destLat)return [t.destLat,t.destLng];
+  return null;
+}
+
+// Météo d'un jour : prévision réelle si ≤ 15 j, sinon tendance saisonnière (année passée)
+async function fetchDayWeather(lat,lng,dateStr){
+  const key=lat.toFixed(2)+','+lng.toFixed(2)+','+dateStr;
+  if(weatherCache[key])return weatherCache[key];
+  const today=new Date();today.setHours(0,0,0,0);
+  const d=new Date(dateStr+'T00:00:00');
+  const diff=Math.round((d-today)/86400000);
+  let res=null;
+  try{
+    if(diff>=-2&&diff<=15){
+      const u=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max&start_date=${dateStr}&end_date=${dateStr}&timezone=auto`;
+      const j=await (await fetch(u)).json();
+      if(j.daily&&j.daily.time&&j.daily.time.length){
+        res={type:'forecast',code:j.daily.weather_code[0],tmax:j.daily.temperature_2m_max[0],tmin:j.daily.temperature_2m_min[0],rain:j.daily.precipitation_probability_max[0],wind:Math.round(j.daily.wind_speed_10m_max[0])};
+      }
+    }
+    if(!res){
+      const ly=new Date(d);ly.setFullYear(d.getFullYear()-1);
+      const lyStr=ymd(ly);
+      const u=`https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lng}&start_date=${lyStr}&end_date=${lyStr}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max&timezone=auto`;
+      const j=await (await fetch(u)).json();
+      if(j.daily&&j.daily.time&&j.daily.time.length&&j.daily.temperature_2m_max[0]!=null){
+        res={type:'season',code:j.daily.weather_code[0],tmax:j.daily.temperature_2m_max[0],tmin:j.daily.temperature_2m_min[0],precip:j.daily.precipitation_sum[0],wind:Math.round(j.daily.wind_speed_10m_max[0]),year:ly.getFullYear()};
+      }
+    }
+  }catch(e){}
+  weatherCache[key]=res;
+  return res;
+}
+
+async function renderWeather(){
+  const el=document.getElementById('weatherEl');
+  if(!el)return;
+  const seq=++weatherSeq;
+  if(!st.days||!st.days.length){
+    el.innerHTML=`<div class="es"><div class="esi">MÉTÉO</div><div class="est">Aucun jour planifié</div><p style="font-size:12.5px;margin-bottom:16px">Ajoutez des jours (et une ville par jour) dans le Planning pour voir la météo prévue à chaque étape.</p><button class="btn bp" onclick="nav('planning')">Aller au planning</button></div>`;
+    return;
+  }
+  el.innerHTML=`<div style="display:flex;align-items:center;gap:12px;color:var(--text3);padding:20px 0"><div class="spin" style="width:22px;height:22px;border:3px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:sp .8s linear infinite"></div><span>Récupération de la météo par étape…</span></div><style>@keyframes sp{to{transform:rotate(360deg)}}</style>`;
+  const results=[];
+  for(let idx=0;idx<st.days.length;idx++){
+    if(seq!==weatherSeq)return;
+    const day=st.days[idx];
+    const dateStr=dayDateStr(idx);
+    const coords=await coordsForDay(day);
+    let w=null;
+    if(coords)w=await fetchDayWeather(coords[0],coords[1],dateStr);
+    results.push({day,dateStr,city:(day.city||'').trim(),coords,w});
+  }
+  if(seq!==weatherSeq)return;
+
+  // Résumé
+  const withW=results.filter(r=>r.w);
+  let summary='';
+  if(withW.length){
+    const avgMax=Math.round(withW.reduce((s,r)=>s+r.w.tmax,0)/withW.length);
+    const avgMin=Math.round(withW.reduce((s,r)=>s+r.w.tmin,0)/withW.length);
+    const rainy=withW.filter(r=>(r.w.rain!=null&&r.w.rain>=40)||(r.w.precip!=null&&r.w.precip>=3)||[51,53,55,61,63,65,80,81,82,95,96,99].includes(r.w.code)).length;
+    const cold=withW.some(r=>r.w.tmin<=5), hot=withW.some(r=>r.w.tmax>=30);
+    const tips=[];
+    if(rainy>0)tips.push(`☔ ${rainy} jour${rainy>1?'s':''} de pluie possible — prévoyez un parapluie`);
+    if(cold)tips.push('🧥 Prévoyez des vêtements chauds');
+    if(hot)tips.push('🧴 Chaleur attendue — crème solaire et eau');
+    const anySeason=withW.some(r=>r.w.type==='season');
+    summary=`<div class="dash-section-card" style="margin-bottom:20px">
+      <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center">
+        <div><div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)">Températures moy.</div><div style="font-size:22px;font-weight:700;font-family:'Shippori Mincho',serif;color:var(--ink)">${avgMax}° / ${avgMin}°</div></div>
+        <div><div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)">Jours de pluie</div><div style="font-size:22px;font-weight:700;font-family:'Shippori Mincho',serif;color:var(--ink)">${rainy} / ${withW.length}</div></div>
+        ${tips.length?`<div style="flex:1;min-width:200px;font-size:12.5px;color:var(--text2);line-height:1.9">${tips.join('<br>')}</div>`:''}
+      </div>
+      ${anySeason?`<div style="font-size:11px;color:var(--text3);margin-top:12px">Certaines dates sont trop éloignées pour une vraie prévision : la <b>tendance saisonnière</b> (météo de l'an dernier à la même date) est affichée à titre indicatif.</div>`:''}
+    </div>`;
+  }
+
+  const cards=results.map(r=>{
+    const dateLabel=new Date(r.dateStr+'T00:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+    const cityLabel=r.city||'<span style="color:var(--text3)">ville non définie</span>';
+    if(!r.w){
+      return `<div class="wc" style="border-top-color:var(--border2)">
+        <div class="wcn">Jour ${r.day.number} · ${dateLabel}</div>
+        <div style="font-weight:600;font-size:13px;color:var(--ink);margin:6px 0">${cityLabel}</div>
+        <div class="wi">❔</div>
+        <div class="wcd">${r.city?'Météo indisponible':'Ajoutez une ville à ce jour'}</div>
+      </div>`;
+    }
+    const [ic,label]=wmo(r.w.code);
+    const rainLine=r.w.rain!=null?`Pluie ${r.w.rain}%`:(r.w.precip!=null?`Précip. ${r.w.precip} mm`:'');
+    return `<div class="wc" style="border-top-color:${r.w.type==='season'?'var(--gold)':'var(--red-mid)'}">
+      <div class="wcn">Jour ${r.day.number} · ${dateLabel}</div>
+      <div style="font-weight:600;font-size:13px;color:var(--ink);margin:6px 0">${cityLabel}</div>
+      <div class="wi">${ic}</div>
+      <div class="wcc">${Math.round(r.w.tmax)}° <span style="color:var(--text3);font-size:18px">/ ${Math.round(r.w.tmin)}°</span></div>
+      <div class="wcd">${label}<br>${[rainLine,'Vent '+r.w.wind+' km/h'].filter(Boolean).join(' · ')}</div>
+      <div style="font-size:10px;margin-top:8px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${r.w.type==='season'?'var(--gold-dk)':'var(--moss)'}">${r.w.type==='season'?'Tendance '+r.w.year:'Prévision'}</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML=summary+`<div class="wg">${cards}</div>`;
+}
+
+// CONVERTER
+function cvY(){const y=parseFloat(document.getElementById('yi').value);if(!isNaN(y)){const e=(y/getRate()).toFixed(2);document.getElementById('ei').value=e;document.getElementById('cvd').textContent=`${getCur()}${y.toLocaleString('fr-FR')} = €${parseFloat(e).toLocaleString('fr-FR')}`;}}
+function cvE(){const e=parseFloat(document.getElementById('ei').value);if(!isNaN(e)){const y=Math.round(e*getRate()*100)/100;document.getElementById('yi').value=y;document.getElementById('cvd').textContent=`€${e.toLocaleString('fr-FR')} = ${getCur()}${y.toLocaleString('fr-FR')}`;}}
+function renderConverter(){
+  const rate=getRate(),cur=getCur();
+  const refs=[{l:'Café',e:3},{l:'Repas simple',e:12},{l:'Restaurant',e:30},{l:'Musée / visite',e:10},{l:'Nuit d\'hôtel',e:90},{l:'Trajet train',e:50}];
+  document.getElementById('qr').innerHTML=refs.map(r=>{const y=Math.round(r.e*rate);return `<div style="background:var(--surface2);border-radius:7px;padding:7px 9px;cursor:pointer" onclick="document.getElementById('yi').value=${y};cvY()"><div style="font-weight:500;font-size:12.5px">${r.l}</div><div style="color:var(--text3);font-size:11px">${cur}${y.toLocaleString('fr-FR')} · €${r.e}</div></div>`;}).join('');
+}
+
+// STATS
+function renderStats(){
+  const cats={};st.ideas.forEach(i=>{cats[i.cat]=(cats[i.cat]||0)+1;});
+  const cities={};st.ideas.forEach(i=>{if(i.city)cities[i.city]=(cities[i.city]||0)+1;});
+  const topC=Object.entries(cities).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const chkD=Object.values(st.checklist).flat().filter(i=>i.done).length;
+  const chkT=Object.values(st.checklist).flat().length;
+  document.getElementById('stEl').innerHTML=`
+    <div class="sg">${[
+      {ic:'💡',v:st.ideas.length,l:'Idées',bg:'var(--blue-lt)'},{ic:'⭐',v:st.ideas.filter(i=>i.favorite).length,l:'Favoris',bg:'var(--yellow)'},
+      {ic:'📅',v:st.days.length,l:'Jours planifiés',bg:'var(--lav-lt)'},{ic:'🧳',v:chkD+'/'+chkT,l:'Checklist',bg:'var(--peach)'}
+    ].map(s=>`<div class="sc" style="background:${s.bg}"><div class="si0">${s.ic}</div><div class="sv">${s.v}</div><div class="slb">${s.l}</div></div>`).join('')}</div>
+    <div class="dg">
+      <div><div class="sec-t">Idées par catégorie</div><div class="card">${Object.entries(cats).map(([c,n])=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><div style="width:24px;height:24px;border-radius:4px;background:${catBg(c)};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:${catColor(c)}">${catIc(c)}</div><span style="flex:1;font-size:12.5px">${c}</span><div style="width:80px;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden"><div style="height:100%;width:${n/Math.max(...Object.values(cats))*100}%;background:${catColor(c)};border-radius:3px"></div></div><span style="font-size:12px;font-weight:600">${n}</span></div>`).join('')||'<div class="tm tsm">Aucune idée</div>'}</div></div>
+      <div><div class="sec-t">Top villes</div><div class="card">${topC.map(([city,n],i)=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="font-weight:700;color:var(--text3);width:18px">${i+1}</span><span style="flex:1;font-size:12.5px">📍 ${city}</span><span style="font-size:12px;font-weight:600">${n} idée${n>1?'s':''}</span></div>`).join('')||'<div class="tm tsm">Aucune idée avec ville</div>'}</div></div>
+    </div>`;
+}
+
+// RENDER ALL
+
+
+
+function flashCoords(){
+  const latEl=document.getElementById('ilat'),lngEl=document.getElementById('ilng');
+  latEl.style.background='var(--moss-lt)';lngEl.style.background='var(--moss-lt)';
+  setTimeout(()=>{latEl.style.background='';lngEl.style.background='';},1500);
+}
+async function nominatim(q){
+  const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q));
+  if(!r.ok)return null;
+  const j=await r.json();
+  return (j&&j[0])?j[0]:null;
+}
+// Géocodage mondial (OpenStreetMap Nominatim), du plus précis au plus large :
+// adresse + ville + pays → adresse + ville → ville + pays → ville.
+// Écrase les coordonnées à chaque changement (corrige une saisie erronée).
+async function geocodeCity(){
+  const city=(document.getElementById('ici').value||'').trim();
+  const addr=(document.getElementById('iaddr')?.value||'').trim();
+  const latEl=document.getElementById('ilat'),lngEl=document.getElementById('ilng');
+  if((!city&&!addr)||!latEl||!lngEl)return;
+  const dest=(tripMeta().dest||'').trim();
+  const queries=[];
+  if(addr&&city&&dest)queries.push(addr+', '+city+', '+dest);
+  if(addr&&city)queries.push(addr+', '+city);
+  if(addr&&!city)queries.push(addr);
+  if(city&&dest)queries.push(city+', '+dest);
+  if(city)queries.push(city);
+  try{
+    for(const q of queries){
+      const res=await nominatim(q);
+      if(res&&res.lat){
+        latEl.value=parseFloat(res.lat).toFixed(5);
+        lngEl.value=parseFloat(res.lon).toFixed(5);
+        flashCoords();
+        return;
+      }
+    }
+  }catch(e){}
+}
+
+// ─── CARTE INTERACTIVE ───
+let leafletMap = null, mapMarkers = [], mapInitialized = false, mapRouteLines = [];
+
+// Styles de trait par mode de transport (itinéraire)
+const MODE_STYLE={
+  walk:{color:'#2E7D32',dashArray:'2 7',weight:4,label:'À pied',ic:'🚶'},
+  bike:{color:'#7A5A9A',dashArray:'1 9',weight:4,label:'Vélo',ic:'🚲'},
+  car:{color:'#37474F',dashArray:null,weight:3,label:'Voiture',ic:'🚗'},
+  train:{color:'#2A3858',dashArray:'12 7',weight:3,label:'Train',ic:'🚆'},
+  bus:{color:'#B8860B',dashArray:'7 7',weight:3,label:'Bus',ic:'🚌'},
+  boat:{color:'#1565C0',dashArray:'14 5 3 5',weight:3,label:'Bateau',ic:'⛴'},
+  plane:{color:'#C0392B',dashArray:'3 12',weight:2.5,label:'Avion',ic:'✈'}
+};
+function setDayMode(dayId,v){
+  const d=st.days.find(x=>x.id===dayId);if(!d)return;
+  d.mode=v;save();
+  if(mapInitialized)drawRoute();
+}
+// Vitesses moyennes (km/h) pour les estimations sans routage réel
+const MODE_SPEED={walk:4.5,bike:15,car:70,train:90,bus:45,boat:35,plane:700};
+// Modes routés sur les vraies routes via OSRM (géométrie + distance réelles)
+const OSRM_MODES={car:true,bus:true,walk:true,bike:true};
+function setMapMode(v){st.mapMode=v;save();syncMapControls();refreshMarkers();}
+function setMapDay(v){st.mapDay=v;save();drawRoute();}
+function syncMapControls(){
+  const ms=document.getElementById('mapModeSel'),ds=document.getElementById('mapDaySel');
+  if(!ms||!ds)return;
+  ms.value=st.mapMode==='route'?'route':'points';
+  ds.style.display=st.mapMode==='route'?'':'none';
+  ds.innerHTML=`<option value="">Tous les jours</option>`+st.days.map(d=>`<option value="${d.id}" ${st.mapDay===d.id?'selected':''}>Jour ${d.number}${d.city?' — '+d.city:''}</option>`).join('');
+}
+// Idée liée à une activité : par identifiant d'abord, par nom en secours (anciennes données)
+function ideaOfAct(a){
+  return st.ideas.find(i=>i.id===a.ideaId)||st.ideas.find(i=>(i.title||'').toLowerCase()===(a.name||'').toLowerCase())||null;
+}
+function havKm(a,b){
+  const R=6371,dLa=(b.lat-a.lat)*Math.PI/180,dLo=(b.lng-a.lng)*Math.PI/180;
+  const x=Math.sin(dLa/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLo/2)**2;
+  return 2*R*Math.asin(Math.sqrt(x));
+}
+function fmtDur(mins){
+  mins=Math.round(mins);
+  if(mins<60)return mins+' min';
+  const h=Math.floor(mins/60),m=mins%60;
+  return h+' h'+(m?(' '+String(m).padStart(2,'0')):'');
+}
+function clearRoute(){mapRouteLines.forEach(l=>leafletMap.removeLayer(l));mapRouteLines=[];}
+let routeDrawSeq=0;
+async function drawRoute(){
+  if(!leafletMap)return;
+  const seq=++routeDrawSeq;
+  clearRoute();
+  const panel=document.getElementById('route-summary');
+  if(st.mapMode!=='route'){if(panel)panel.style.display='none';return;}
+  // Points dans l'ordre du planning (jour filtré éventuel), coordonnées via les idées liées
+  const days=st.mapDay?st.days.filter(d=>d.id===st.mapDay):st.days;
+  const pts=[];
+  days.forEach(d=>{(d.activities||[]).forEach(a=>{
+    const i=ideaOfAct(a);
+    if(i&&i.lat&&i.lng&&parseFloat(i.lat))pts.push({lat:parseFloat(i.lat),lng:parseFloat(i.lng),mode:d.mode||'walk',day:d.number,name:a.name});
+  });});
+  if(pts.length<2){
+    if(panel){panel.style.display='';panel.innerHTML=`<div style="color:var(--text3)">Pas assez de points géolocalisés${st.mapDay?' ce jour-là':''} pour tracer un trajet.<br>Ajoutez des activités (liées à des idées avec coordonnées) dans le planning.</div>`;}
+    return;
+  }
+  const segs=[];let total=0;
+  for(let k=1;k<pts.length;k++){
+    if(seq!==routeDrawSeq)return; // un nouveau tracé a été demandé entre-temps
+    const from=pts[k-1],to=pts[k],mode=to.mode;
+    const s=MODE_STYLE[mode]||MODE_STYLE.walk;
+    let latlngs=[[from.lat,from.lng],[to.lat,to.lng]];
+    let km=havKm(from,to);
+    let mins,real=false;
+    if(OSRM_MODES[mode]&&km<500){
+      try{
+        const u=`https://router.project-osrm.org/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
+        const j=await (await fetch(u)).json();
+        if(j.routes&&j.routes[0]){
+          latlngs=j.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+          km=j.routes[0].distance/1000;
+          mins=mode==='car'?j.routes[0].duration/60:km/MODE_SPEED[mode]*60;
+          real=true;
+        }
+      }catch(e){}
+    }
+    if(mins===undefined)mins=km/(MODE_SPEED[mode]||50)*60;
+    if(seq!==routeDrawSeq)return;
+    const line=L.polyline(latlngs,{color:s.color,weight:s.weight,dashArray:s.dashArray,opacity:.85}).addTo(leafletMap);
+    line.bindTooltip(`${s.ic} ${s.label} · ${fmtDur(mins)}${real?'':' (estimé)'} — ${from.name} → ${to.name}`,{sticky:true});
+    mapRouteLines.push(line);
+    total+=mins;
+    segs.push({from,to,mode,mins,km,real,s});
+  }
+  if(panel){
+    panel.style.display='';
+    panel.innerHTML=`<div style="font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);margin-bottom:8px">Trajet${st.mapDay?' du jour':''} · total ${fmtDur(total)}</div>`+
+      segs.map(g=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
+        <span style="width:18px;text-align:center">${g.s.ic}</span>
+        <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${g.from.name} → ${g.to.name}</span>
+        <span style="font-weight:600;color:var(--ink);white-space:nowrap">${fmtDur(g.mins)}</span>
+      </div>`).join('')+
+      `<div style="font-size:10.5px;color:var(--text3);margin-top:8px">Temps ${segs.some(g=>!g.real)?'partiellement estimés':'calculés sur les routes réelles'} · train/avion/bateau : estimation à vol d'oiseau</div>`;
+  }
+  if(mapRouteLines.length){
+    const group=L.featureGroup(mapRouteLines);
+    leafletMap.fitBounds(group.getBounds().pad(0.12));
+  }
+}
+
+const CAT_COLORS = {
+  temple:'#C4781A',    // orange chaud
+  restaurant:'#C0392B', // rouge vif
+  hotel:'#1565C0',     // bleu roi
+  activite:'#00897B',  // teal soutenu
+  lieux:'#6A1B9A',     // violet profond
+  onsen:'#6A1B9A',
+  musee:'#F57F17',     // ambre/or
+  excursion:'#F57F17',
+  shopping:'#D81B60',  // rose fuchsia
+  nature:'#2E7D32',    // vert forêt
+  ville:'#37474F',     // gris anthracite (pour le train)
+  pdv:'#4E342E',       // brun foncé
+  transport:'#546E7A', // gris bleu
+  autre:'#757575'
+};
+
+const CAT_LETTERS = {
+  temple:'T', restaurant:'R', hotel:'H',
+  activite:'A', lieux:'L', onsen:'L',
+  musee:'E', excursion:'E',
+  shopping:'S', nature:'N', ville:'V',
+  pdv:'P', transport:'Tr', autre:'+'
+};
+
+function initMap() {
+  if (mapInitialized) { refreshMarkers(); return; }
+  if (typeof L === 'undefined') { setTimeout(initMap, 300); return; }
+
+  // Vue monde — s'ajuste automatiquement aux marqueurs du voyage
+  leafletMap = L.map('leaflet-map', {
+    zoomControl: true,
+    minZoom: 2,
+    maxZoom: 16
+  }).setView([25, 10], 2);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+    maxZoom: 18
+  }).addTo(leafletMap);
+
+  mapInitialized = true;
+  refreshMarkers();
+  renderMapLegend();
+}
+
+function makeMarkerIcon(cat) {
+  const color = CAT_COLORS[cat] || '#888';
+
+  // SVGs par catégorie
+  const icons = {
+    hotel: `<svg viewBox="0 0 24 24" fill="#fff" width="14" height="14"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>`,
+    lieux: `<svg viewBox="0 0 24 24" fill="#fff" width="13" height="13"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`,
+    onsen: `<svg viewBox="0 0 24 24" fill="#fff" width="13" height="13"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`,
+    temple: `<svg viewBox="0 0 24 24" fill="#fff" width="14" height="14"><path d="M12 3L2 9h3v1H3v2h1v7h2v-7h2v7h2v-4h4v4h2v-7h2v7h2v-7h1V11h-2V9h3L12 3zm0 2.5L18.5 9h-13L12 5.5z"/></svg>`,
+    ville: `<svg viewBox="0 0 24 24" fill="#fff" width="14" height="14"><path d="M4 15.5C4 17.43 5.57 19 7.5 19L6 20.5v.5h12v-.5L16.5 19c1.93 0 3.5-1.57 3.5-3.5V5c0-3.5-3.58-4-8-4S4 1.5 4 5v10.5zm8 1.5c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm6-7H6V5h12v5z"/></svg>`,
+    restaurant: `<svg viewBox="0 0 24 24" fill="#fff" width="13" height="13"><path d="M18.06 22.99h1.66c.84 0 1.53-.64 1.63-1.46L23 5.05h-5V1h-1.97v4.05h-4.97l.3 2.34c1.71.47 3.31 1.32 4.27 2.26 1.44 1.42 2.43 2.89 2.43 5.29v8.05zM1 21.99V21h15.03v.99c0 .55-.45 1-1.01 1H2.01c-.56 0-1.01-.45-1.01-1zm15.03-7c0-3.87-3.36-7-7.52-7C4.36 7.99 1 11.12 1 14.99v1h15.03v-1z"/></svg>`,
+    activite: `<svg viewBox="0 0 24 24" fill="#fff" width="13" height="13"><path d="M13.49 5.48c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm-3.6 13.9l1-4.4 2.1 2v6h2v-7.5l-2.1-2 .6-3c1.3 1.5 3.3 2.5 5.5 2.5v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1l-5.2 2.2v4.7h2v-3.4l1.8-.7-1.6 8.1-4.9-1-.4 2 7 1.4z"/></svg>`,
+    musee: `<svg viewBox="0 0 24 24" fill="#fff" width="13" height="13"><path d="M22 11V9L12 2 2 9v2h2v9H2v2h20v-2h-2v-9h2zm-4 9H6v-9h12v9zm-5-3v2h-2v-2c-.55 0-1-.45-1-1v-3c0-.55.45-1 1-1h2c.55 0 1 .45 1 1v3c0 .55-.45 1-1 1z"/></svg>`,
+    excursion: `<svg viewBox="0 0 24 24" fill="#fff" width="13" height="13"><path d="M22 11V9L12 2 2 9v2h2v9H2v2h20v-2h-2v-9h2zm-4 9H6v-9h12v9zm-5-3v2h-2v-2c-.55 0-1-.45-1-1v-3c0-.55.45-1 1-1h2c.55 0 1 .45 1 1v3c0 .55-.45 1-1 1z"/></svg>`,
+    shopping: `<svg viewBox="0 0 24 24" fill="#fff" width="13" height="13"><path d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-1.99.9-1.99 2L3 20c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3zm0 10c-1.66 0-3-1.34-3-3h2c0 .55.45 1 1 1s1-.45 1-1h2c0 1.66-1.34 3-3 3z"/></svg>`,
+    nature: `<svg viewBox="0 0 24 24" fill="#fff" width="13" height="13"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2-8 2C10 3 8.5 4 8.5 4 9.5 2 11 2 14 2c3 0 5 1 5 1s-1 3-2 5z"/></svg>`,
+    pdv: `<svg viewBox="0 0 24 24" fill="#fff" width="13" height="13"><path d="M14 6l-1-2H5v17h2v-7h5l1 2h7V6h-6zm4 8h-4l-1-2H7V6h5l1 2h5v6z"/></svg>`,
+    transport: `<svg viewBox="0 0 24 24" fill="#fff" width="13" height="13"><path d="M4 15.5C4 17.43 5.57 19 7.5 19L6 20.5v.5h12v-.5L16.5 19c1.93 0 3.5-1.57 3.5-3.5V5c0-3.5-3.58-4-8-4S4 1.5 4 5v10.5zm8 1.5c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm6-7H6V5h12v5z"/></svg>`,
+    autre: `<svg viewBox="0 0 24 24" fill="#fff" width="13" height="13"><circle cx="12" cy="12" r="8"/></svg>`
+  };
+
+  const svgIcon = icons[cat] || icons.autre;
+
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width:34px;height:34px;border-radius:50%;
+      background:${color};
+      border:2.5px solid #fff;
+      box-shadow:0 2px 8px rgba(0,0,0,.35);
+      display:flex;align-items:center;justify-content:center;
+    ">${svgIcon}</div>`,
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+    popupAnchor: [0, -19]
+  });
+}
+
+function refreshMarkers() {
+  if (!leafletMap) return;
+  mapMarkers.forEach(m => leafletMap.removeLayer(m));
+  mapMarkers = [];
+
+  // Mode « Tous les points » : toutes les idées géolocalisées
+  const withCoords = st.ideas.filter(i => i.lat && i.lng && parseFloat(i.lat) && parseFloat(i.lng));
+
+  withCoords.forEach(idea => {
+    const color = CAT_COLORS[idea.cat] || '#888';
+    const marker = L.marker([parseFloat(idea.lat), parseFloat(idea.lng)], {
+      icon: makeMarkerIcon(idea.cat)
+    }).addTo(leafletMap);
+
+    // Trouver dans quel jour cette idée apparaît (par id, nom en secours)
+    let dayInfo = '';
+    st.days.forEach(d => {
+      (d.activities||[]).forEach(a => {
+        if(a.ideaId===idea.id || (a.name||'').toLowerCase()===(idea.title||'').toLowerCase())
+          dayInfo = `<div style="font-size:10px;font-weight:700;color:var(--red);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Jour ${d.number}${d.city?' · '+d.city:''}</div>`;
+      });
+    });
+
+    marker.bindPopup(`
+      <div class="map-popup">
+        ${dayInfo}
+        <div class="map-popup-cat" style="color:${color}">${catLabel(idea.cat)}</div>
+        <div class="map-popup-title">${idea.title}</div>
+        ${idea.desc ? `<div class="map-popup-desc">${idea.desc.slice(0,100)}${idea.desc.length>100?'…':''}</div>` : ''}
+        <div class="map-popup-meta">
+          ${idea.city ? `<span>${idea.city}</span>` : ''}
+          ${parseFloat(idea.cost)>0 ? `<span>${fmtCost(idea.cost)}</span>` : '<span>Gratuit</span>'}
+        </div>
+        ${idea.url ? `<a href="${idea.url}" target="_blank" class="map-popup-link">Voir le site →</a>` : ''}
+      </div>
+    `, { maxWidth: 220 });
+
+    mapMarkers.push(marker);
+  });
+
+  renderMapLegend();
+  syncMapControls();
+  drawRoute();
+
+  if (st.mapMode === 'route') return; // drawRoute gère le cadrage
+  if (mapMarkers.length > 0) {
+    // Centre là où les points sont — s'adapte au groupe de marqueurs
+    const group = L.featureGroup(mapMarkers);
+    leafletMap.fitBounds(group.getBounds().pad(0.15));
+  } else {
+    // Aucun marqueur : centre sur la destination du voyage
+    const t = tripMeta();
+    if (t.destBB && t.destBB.length === 4) {
+      leafletMap.fitBounds([[t.destBB[0], t.destBB[2]], [t.destBB[1], t.destBB[3]]]);
+    } else if (t.destLat) {
+      leafletMap.setView([t.destLat, t.destLng], 5);
+    } else {
+      leafletMap.setView([25, 10], 2);
+    }
+  }
+}
+
+function renderMapLegend() {
+  const el = document.getElementById('map-legend');
+  if (!el) return;
+  const present = [...new Set(st.ideas.filter(i=>i.lat&&i.lng).map(i=>i.cat))];
+  const catLabels = {temple:'Temple',restaurant:'Restaurant',hotel:'Hôtel',activite:'Activité',onsen:'Onsen',musee:'Excursion',shopping:'Shopping',nature:'Nature',ville:'Ville',pdv:'Point de vue',autre:'Autre'};
+  if (!present.length) { el.innerHTML = '<span style="font-size:11px;color:var(--text3)">Aucune idée avec coordonnées</span>'; return; }
+  el.innerHTML = present.map(c => `
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)">
+      <div style="width:20px;height:20px;border-radius:50%;background:${CAT_COLORS[c]||'#888'};
+        display:flex;align-items:center;justify-content:center;flex-shrink:0;
+        box-shadow:0 1px 4px rgba(0,0,0,.2)">
+      </div>
+      <span style="font-weight:500">${catLabels[c]||c}</span>
+    </div>`).join('');
+}
+
+// CARNET DE VOYAGE
+function renderCarnet(){
+  const el=document.getElementById('carnetEl');
+  if(!st.days||!st.days.length){
+    el.innerHTML=`<div class="carnet-empty">
+      <div class="carnet-empty-title">Aucun jour planifié</div>
+      <p style="font-size:13px;margin-bottom:20px">Ajoutez des jours dans le Planning pour générer votre carnet.</p>
+      <button class="btn bp" onclick="nav('planning')">Aller au planning</button>
+    </div>`;
+    return;
+  }
+  el.innerHTML=st.days.map((day,idx)=>{
+    const acts=day.activities||[];
+    const totalCost=acts.reduce((s,a)=>s+parseFloat(a.cost||0),0);
+    const actsHtml=acts.length?acts.map((a,ai)=>`
+      <div class="carnet-act">
+        ${a.time?`<div class="carnet-act-time">${a.time}${a.duration?' · '+a.duration:''}</div>`:''}
+        <div class="carnet-act-name">${a.name}</div>
+        <div class="carnet-act-meta">
+          ${a.cost&&parseFloat(a.cost)>0?`<span>${fmtCost(a.cost)}</span>`:'<span>Gratuit</span>'}
+          ${a.cat?`<span>${a.cat}</span>`:''}
+          ${a.url?`<a href="${a.url}" target="_blank" style="color:var(--red);text-decoration:none;font-weight:500">Voir le site</a>`:''}
+        </div>
+        ${a.notes?`<div class="carnet-act-notes">${a.notes}</div>`:''}
+      </div>`).join('')
+    :`<div style="padding:12px 0 12px 20px;font-size:12.5px;color:var(--text3);font-style:italic">Aucune activité planifiée ce jour</div>`;
+    return`<div class="carnet-day">
+      <div class="carnet-day-header">
+        <div>
+          <div class="carnet-day-num">Jour ${day.number}</div>
+          <div class="carnet-day-title">${day.title.replace(/^Jour \d+ — /,'')}</div>
+          ${day.city?`<div class="carnet-day-city">${day.city}</div>`:''}
+        </div>
+        <div class="carnet-day-line"></div>
+        ${totalCost>0?`<div style="font-size:12px;font-weight:600;color:var(--text2);white-space:nowrap">${fmtCost(totalCost)}</div>`:''}
+      </div>
+      <div class="carnet-acts">${actsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderAll(){renderIdeas();updBadges();renderPlanning();renderBudget();renderTr();renderNotes();renderDash();}
+
+// ─── BOOT ───
+loadTrips();
+if(trips.theme==='night'){
+  document.documentElement.setAttribute('data-theme','night');
+  const b1=document.getElementById('thbtn');if(b1)b1.textContent='Jour';
+  const b2=document.getElementById('thbtn-home');if(b2)b2.textContent='Jour';
+}
+document.querySelectorAll('.ss').forEach(s=>s.classList.add('open'));
+renderTrips();
+// Lien d'invitation ?join=<id> : rejoindre le voyage
+(function(){
+  const jid=new URLSearchParams(location.search).get('join');
+  if(jid){
+    cloudPull(jid).then(ok=>{
+      if(ok){renderTrips();toast('Voyage rejoint ! Il apparaît dans votre liste.','s');}
+      else toast('Voyage introuvable ou lien invalide','e');
+    });
+    history.replaceState(null,'',location.pathname);
+  }
+})();
+refreshTripsFromCloud();
+setInterval(()=>{
+  if(currentTripId)updateCountdown(st.departureDate);
+  else renderTrips();
+}, 60000);
 </script>
 </body>
 </html>
