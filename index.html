@@ -185,6 +185,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 .fsel:focus{border-color:var(--red-mid);box-shadow:0 0 0 3px var(--red-lt)}
 .ic0{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;transition:all var(--tr);position:relative;overflow:hidden;border-top:3px solid var(--cc,var(--border2))}
 .ic0:hover{box-shadow:var(--sh-md);transform:translateY(-2px)}
+.ic-cover{height:104px;margin:-18px -18px 12px;overflow:hidden;display:flex;align-items:center;justify-content:center;position:relative}
+.ic-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.ic-cover .ic-ph{font-size:36px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.15))}
 .ich{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
 .ict{font-weight:600;font-size:13.5px;flex:1;margin-right:8px;color:var(--ink);line-height:1.3}
 .icc{font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;white-space:nowrap;letter-spacing:.08em;text-transform:uppercase;background:var(--surface2);color:var(--text3)}
@@ -619,7 +622,7 @@ body.home #sb,body.home #main{display:none}
   <div class="pg" id="pg-ideas">
     <div class="ph">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div><div class="pt">Mes id&#233;es</div><div class="ps">Toutes vos envies pour le Japon &mdash; jusqu&#39;&#224; 400 id&#233;es</div></div>
+        <div><div class="pt">Mes id&#233;es</div><div class="ps" id="ideas-sub">Tous les lieux rep&#233;r&#233;s pour ce voyage</div></div>
         <button class="btn bp" onclick="showAddIdea()">+ Nouvelle id&#233;e</button>
       </div>
     </div>
@@ -1444,6 +1447,7 @@ function catBg(c){const m={
   pdv:'#F8F6E4',autre:'#F0F0F0'
 };return m[c]||'#F5F5F5';}
 function catIc(c){const m={ville:'○',excursion:'◇',musee:'◇',restaurant:'◈',shopping:'□',activite:'△',temple:'⊕',lieux:'◎',onsen:'◎',nature:'◉',transport:'→',divers:'·',hotel:'▱',pdv:'◈',autre:'·'};return m[c]||'·';}
+function catEmoji(c){const m={temple:'⛩️',restaurant:'🍽️',hotel:'🛏️',activite:'🎟️',lieux:'🏛️',musee:'🖼️',excursion:'🧭',shopping:'🛍️',nature:'🏞️',ville:'🏙️',pdv:'🌄',transport:'🚆',onsen:'♨️',autre:'📍'};return m[c]||'📍';}
 function fmtCost(n){const v=parseFloat(n);if(!v)return'Gratuit';return v.toLocaleString('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0});}
 
 // COUNTDOWN
@@ -1727,12 +1731,17 @@ function renderIdeas(){
   else if(srt==='cout')ideas.sort((a,b)=>parseFloat(a.cost||0)-parseFloat(b.cost||0));
   else if(srt==='prio'){const p={haute:0,moyenne:1,basse:2};ideas.sort((a,b)=>(p[a.priority]||1)-(p[b.priority]||1));}
   else ideas.sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const sub=document.getElementById('ideas-sub');
+  if(sub){const dest=(tripMeta().dest||'').trim();sub.textContent=`${st.ideas.length} lieu${st.ideas.length>1?'x':''} repéré${st.ideas.length>1?'s':''}${dest?' — '+dest:''}`;}
   const g=document.getElementById('ig');
   if(!ideas.length){g.innerHTML=`<div class="es" style="grid-column:1/-1"><div class="esi">IDEES</div><div class="est">Aucune idée trouvée</div><button class="btn bp mt16" onclick="showAddIdea()">+ Nouvelle idée</button></div>`;return;}
   const plannedIds=new Set(),plannedNames=new Set();
   (st.days||[]).forEach(d=>(d.activities||[]).forEach(a=>{if(a.ideaId)plannedIds.add(a.ideaId);plannedNames.add((a.name||'').toLowerCase());}));
   g.innerHTML=ideas.map(i=>`
     <div class="ic0" style="--cc:${catColor(i.cat)}">
+      <div class="ic-cover" data-id="${i.id}" style="background:linear-gradient(135deg,${catBg(i.cat)},var(--surface2))">
+        ${i.img&&i.img!=='none'?`<img src="${i.img}" loading="lazy" onerror="this.parentElement.innerHTML='<span class=\\'ic-ph\\'>'+'${catEmoji(i.cat)}'+'</span>'">`:`<span class="ic-ph">${catEmoji(i.cat)}</span>`}
+      </div>
       <div class="ich"><div class="ict">${i.title}</div><div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${plannedIds.has(i.id)||plannedNames.has(i.title.toLowerCase())?'<span class="icc" style="background:var(--moss-lt);color:var(--moss)">Planifié</span>':''}<span class="icc">${catLabel(i.cat)}</span></div></div>
       ${i.desc?`<div class="icd">${i.desc}</div>`:''}
       <div class="icm">
@@ -1748,6 +1757,38 @@ function renderIdeas(){
         <button class="btn bs bsm" style="color:var(--red)" onclick="delIdea('${i.id}')">Supprimer</button>
       </div>
     </div>`).join('');
+  loadIdeaImages();
+}
+// Récupère une vignette Wikipédia par nom de lieu (fr puis en), une seule fois par idée
+async function wikiThumb(title){
+  for(const lang of ['fr','en']){
+    try{
+      const r=await fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/`+encodeURIComponent(title));
+      if(!r.ok)continue;
+      const j=await r.json();
+      if(j.thumbnail&&j.thumbnail.source)return j.thumbnail.source.replace(/\/\d+px-/,'/320px-');
+    }catch(e){}
+  }
+  return '';
+}
+let imgToken=0;
+async function loadIdeaImages(){
+  const my=++imgToken;
+  const todo=st.ideas.filter(i=>!i.img);
+  if(!todo.length)return;
+  let changed=false;
+  for(const idea of todo){
+    if(my!==imgToken)return;               // un nouveau rendu a pris le relais
+    const url=await wikiThumb(idea.title);
+    idea.img=url||'none';
+    if(url){
+      changed=true;
+      const el=document.querySelector(`.ic-cover[data-id="${idea.id}"]`);
+      if(el){el.innerHTML=`<img src="${url}" loading="lazy" onerror="this.parentElement.innerHTML='<span class=\\'ic-ph\\'>${catEmoji(idea.cat)}</span>'">`;}
+    }
+    await new Promise(r=>setTimeout(r,130));
+  }
+  if(changed&&my===imgToken)save();        // persiste + synchro cloud (partagé)
 }
 function updBadges(){
   const bdg=document.getElementById('bdg-ideas');
