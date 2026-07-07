@@ -1759,8 +1759,9 @@ function renderIdeas(){
     </div>`).join('');
   loadIdeaImages();
 }
-// Récupère une vignette Wikipédia par nom de lieu (fr puis en), une seule fois par idée
-async function wikiThumb(title){
+// Vignette d'un lieu : page Wikipédia exacte (fr/en) → recherche floue → photo Wikimedia proche des coordonnées
+async function wikiThumb(idea){
+  const title=idea.title||'';
   for(const lang of ['fr','en']){
     try{
       const r=await fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/`+encodeURIComponent(title));
@@ -1768,6 +1769,33 @@ async function wikiThumb(title){
       const j=await r.json();
       if(j.thumbnail&&j.thumbnail.source)return j.thumbnail.source.replace(/\/\d+px-/,'/320px-');
     }catch(e){}
+  }
+  // Recherche Wikipédia floue (titre + ville)
+  try{
+    const q=encodeURIComponent(title+(idea.city?' '+idea.city:''));
+    const r=await fetch(`https://fr.wikipedia.org/w/api.php?action=query&list=search&srsearch=${q}&srlimit=1&format=json&origin=*`);
+    if(r.ok){
+      const j=await r.json();
+      const hit=j.query&&j.query.search&&j.query.search[0];
+      if(hit){
+        const s=await fetch('https://fr.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(hit.title));
+        if(s.ok){const js=await s.json();if(js.thumbnail&&js.thumbnail.source)return js.thumbnail.source.replace(/\/\d+px-/,'/320px-');}
+      }
+    }
+  }catch(e){}
+  // Photo Wikimedia Commons prise près des coordonnées du lieu
+  if(idea.lat&&idea.lng){
+    for(const rad of [500,3000]){
+      try{
+        const r=await fetch(`https://commons.wikimedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${idea.lat}%7C${idea.lng}&ggsradius=${rad}&ggslimit=5&ggsnamespace=6&prop=imageinfo&iiprop=url&iiurlwidth=320&format=json&origin=*`);
+        if(r.ok){
+          const j=await r.json();
+          const pages=j.query&&j.query.pages?Object.values(j.query.pages):[];
+          const pic=pages.find(p=>p.imageinfo&&/\.(jpe?g|png)$/i.test(p.imageinfo[0].url||''));
+          if(pic)return pic.imageinfo[0].thumburl||pic.imageinfo[0].url;
+        }
+      }catch(e){}
+    }
   }
   return '';
 }
@@ -1779,7 +1807,7 @@ async function loadIdeaImages(){
   let changed=false;
   for(const idea of todo){
     if(my!==imgToken)return;               // un nouveau rendu a pris le relais
-    const url=await wikiThumb(idea.title);
+    const url=await wikiThumb(idea);
     idea.img=url||'none';
     if(url){
       changed=true;
@@ -2686,8 +2714,8 @@ function refreshMarkers() {
   mapMarkers.forEach(m => leafletMap.removeLayer(m));
   mapMarkers = [];
 
-  // Mode « Tous les points » : toutes les idées géolocalisées
-  const withCoords = st.ideas.filter(i => i.lat && i.lng && parseFloat(i.lat) && parseFloat(i.lng));
+  // Mode « Tous les points » : toutes les idées géolocalisées (filtrées par la légende)
+  const withCoords = st.ideas.filter(i => i.lat && i.lng && parseFloat(i.lat) && parseFloat(i.lng) && !mapCatFilter.has(i.cat||'autre'));
 
   withCoords.forEach(idea => {
     const color = CAT_COLORS[idea.cat] || '#888';
@@ -2706,6 +2734,7 @@ function refreshMarkers() {
 
     marker.bindPopup(`
       <div class="map-popup">
+        ${idea.img&&idea.img!=='none'?`<img src="${idea.img}" style="width:100%;height:96px;object-fit:cover;border-radius:7px;margin-bottom:7px;display:block" onerror="this.remove()">`:''}
         ${dayInfo}
         <div class="map-popup-cat" style="color:${color}">${catLabel(idea.cat)}</div>
         <div class="map-popup-title">${idea.title}</div>
@@ -2725,6 +2754,7 @@ function refreshMarkers() {
   syncMapControls();
   drawRoute();
 
+  if (keepMapView) return;            // filtre légende : ne pas recadrer
   if (st.mapMode === 'route') return; // drawRoute gère le cadrage
   if (mapMarkers.length > 0) {
     // Centre là où les points sont — s'adapte au groupe de marqueurs
@@ -2743,20 +2773,32 @@ function refreshMarkers() {
   }
 }
 
+// Légende cliquable : filtre les points par catégorie
+let mapCatFilter=new Set(); // catégories masquées
+let keepMapView=false;
+function toggleMapCat(c){
+  if(mapCatFilter.has(c))mapCatFilter.delete(c);else mapCatFilter.add(c);
+  keepMapView=true;refreshMarkers();keepMapView=false;
+}
+function resetMapCats(){mapCatFilter.clear();keepMapView=true;refreshMarkers();keepMapView=false;}
 function renderMapLegend() {
   const el = document.getElementById('map-legend');
   if (!el) return;
-  const present = [...new Set(st.ideas.filter(i=>i.lat&&i.lng).map(i=>i.cat))];
+  const present = [...new Set(st.ideas.filter(i=>i.lat&&i.lng).map(i=>i.cat||'autre'))];
   const catLabels = {temple:'Temple',restaurant:'Restaurant',hotel:'Hôtel',activite:'Activité',onsen:'Onsen',musee:'Excursion',shopping:'Shopping',nature:'Nature',ville:'Ville',pdv:'Point de vue',autre:'Autre'};
   if (!present.length) { el.innerHTML = '<span style="font-size:11px;color:var(--text3)">Aucune idée avec coordonnées</span>'; return; }
-  el.innerHTML = present.map(c => `
-    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)">
+  el.innerHTML = present.map(c => {
+    const off=mapCatFilter.has(c);
+    return `
+    <div onclick="toggleMapCat('${c}')" title="Cliquer pour ${off?'afficher':'masquer'} cette catégorie"
+      style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);cursor:pointer;user-select:none;opacity:${off?'.32':'1'};transition:opacity .15s">
       <div style="width:20px;height:20px;border-radius:50%;background:${CAT_COLORS[c]||'#888'};
         display:flex;align-items:center;justify-content:center;flex-shrink:0;
         box-shadow:0 1px 4px rgba(0,0,0,.2)">
       </div>
-      <span style="font-weight:500">${catLabels[c]||c}</span>
-    </div>`).join('');
+      <span style="font-weight:500;${off?'text-decoration:line-through':''}">${catLabels[c]||c}</span>
+    </div>`;
+  }).join('')+(mapCatFilter.size?`<button class="tbtn" style="font-size:10px;padding:3px 9px" onclick="resetMapCats()">Tout afficher</button>`:'');
 }
 
 // CARNET DE VOYAGE
