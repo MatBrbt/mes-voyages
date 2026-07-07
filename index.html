@@ -1783,17 +1783,25 @@ async function wikiThumb(idea){
       }
     }
   }catch(e){}
-  // Photo Wikimedia Commons prise près des coordonnées du lieu
+  // Fichiers Commons à éviter (panneaux, plaques, cartes, blasons…)
+  const badFile=/(sign|plaque|panel|panneau|map|karte|carte[_ .-]|cartello|se[nñ]al|schild|hinweis|info[_ -]?(board|tafel)|logo|coat[_ -]of[_ -]arms|escudo|stemma|wappen|flag|drapeau|placa|diagram|plan[_ .-]|marker|milestone)/i;
+  const pickPic=j=>{
+    const pages=j&&j.query&&j.query.pages?Object.values(j.query.pages):[];
+    const pic=pages.find(p=>p.imageinfo&&/\.(jpe?g|png)$/i.test(p.imageinfo[0].url||'')&&!badFile.test(p.title||''));
+    return pic?(pic.imageinfo[0].thumburl||pic.imageinfo[0].url):'';
+  };
+  // Recherche Commons par NOM (photos emblématiques du lieu)
+  try{
+    const q=encodeURIComponent(title+(idea.city?' '+idea.city:''));
+    const r=await fetch(`https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${q}&gsrnamespace=6&gsrlimit=10&prop=imageinfo&iiprop=url&iiurlwidth=320&format=json&origin=*`);
+    if(r.ok){const u=pickPic(await r.json());if(u)return u;}
+  }catch(e){}
+  // Photo Wikimedia Commons prise près des coordonnées du lieu (dernier recours)
   if(idea.lat&&idea.lng){
-    for(const rad of [500,3000]){
+    for(const rad of [600,3000]){
       try{
-        const r=await fetch(`https://commons.wikimedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${idea.lat}%7C${idea.lng}&ggsradius=${rad}&ggslimit=5&ggsnamespace=6&prop=imageinfo&iiprop=url&iiurlwidth=320&format=json&origin=*`);
-        if(r.ok){
-          const j=await r.json();
-          const pages=j.query&&j.query.pages?Object.values(j.query.pages):[];
-          const pic=pages.find(p=>p.imageinfo&&/\.(jpe?g|png)$/i.test(p.imageinfo[0].url||''));
-          if(pic)return pic.imageinfo[0].thumburl||pic.imageinfo[0].url;
-        }
+        const r=await fetch(`https://commons.wikimedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${idea.lat}%7C${idea.lng}&ggsradius=${rad}&ggslimit=10&ggsnamespace=6&prop=imageinfo&iiprop=url&iiurlwidth=320&format=json&origin=*`);
+        if(r.ok){const u=pickPic(await r.json());if(u)return u;}
       }catch(e){}
     }
   }
