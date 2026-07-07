@@ -857,6 +857,7 @@ body.home #sb,body.home #main{display:none}
       <div class="fg"><label class="fl">Longitude (carte)</label><input class="fi" type="number" id="ilng" step="any" placeholder="Ex: 139.6503"></div>
     </div>
     <div class="fg"><label class="fl">Lien internet</label><input class="fi" type="url" id="iul" placeholder="https://..."></div>
+    <div class="fg"><label class="fl">Photo <span style="font-weight:400;text-transform:none;letter-spacing:0">(collez le lien d&rsquo;une image &mdash; vide = photo automatique)</span></label><input class="fi" type="url" id="iimg" placeholder="https://exemple.com/photo.jpg"></div>
     <div class="fg"><label class="fl">Note personnelle</label><textarea class="fta" id="ino" placeholder="Vos remarques..." style="min-height:55px"></textarea></div>
     <div class="fg"><label class="fl">Tags (virgules)</label><input class="fi" id="itg0" placeholder="incontournable, matin, photos"></div>
     <div class="fa">
@@ -1034,6 +1035,7 @@ body.home #sb,body.home #main{display:none}
       <div class="fg"><label class="fl">Budget total (&#8364;)</label><input class="fi" type="number" id="tpbudget" placeholder="Ex : 3000"></div>
     </div>
     <div class="fg"><label class="fl">Description</label><textarea class="fta" id="tpdesc" placeholder="Quelques mots sur ce voyage..."></textarea></div>
+    <div class="fg"><label class="fl">Image de couverture <span style="font-weight:400;text-transform:none;letter-spacing:0">(collez un lien &mdash; vide = auto)</span></label><input class="fi" type="url" id="tpcover" placeholder="https://exemple.com/photo.jpg"></div>
     <div class="fr">
       <div class="fg"><label class="fl">Devise locale (auto)</label><input class="fi" id="tpcur" maxlength="4" placeholder="auto"></div>
       <div class="fg"><label class="fl">Taux (1 &#8364; = ?)</label><input class="fi" type="number" id="tprate" step="any" placeholder="auto"></div>
@@ -1131,6 +1133,7 @@ function autoCurrency(){
 }
 async function fetchCover(tripId){
   const t=trips.list.find(x=>x.id===tripId);if(!t)return;
+  if(t.coverQ==='manual')return; // couverture choisie par l'utilisateur : ne pas écraser
   const q=(t.dest||t.name||'').trim();if(!q)return;
   if(t.cover&&t.coverQ===q)return;
   try{
@@ -1339,6 +1342,7 @@ function showTripModal(id){
   document.getElementById('tpdate').value=t?.date||'';
   document.getElementById('tpbudget').value=t?.budget||'';
   document.getElementById('tpdesc').value=t?.desc||'';
+  document.getElementById('tpcover').value=(t?.coverQ==='manual'?t.cover:'')||'';
   document.getElementById('tpcur').value=t?.cur||'';
   document.getElementById('tprate').value=t?.rate||'';
   om('m-trip');
@@ -1360,6 +1364,11 @@ function saveTrip(){
     rate:rateIn||(info?info[2]:1),
     curCode:info?info[0]:'EUR'
   };
+  // Couverture personnalisée : lien fourni = prioritaire ; champ vidé = retour à l'auto
+  const coverIn=document.getElementById('tpcover').value.trim();
+  const prev=id?trips.list.find(x=>x.id===id):null;
+  if(coverIn){f.cover=coverIn;f.coverQ='manual';}
+  else if(prev&&prev.coverQ==='manual'){f.cover='';f.coverQ='';}
   let t;
   if(id){t=trips.list.find(x=>x.id===id);if(t)Object.assign(t,f);}
   else{t={id:uid(),...f};trips.list.push(t);}
@@ -1664,18 +1673,19 @@ function showAddIdea(id){
   document.getElementById('atrb').style.display=id?'inline-flex':'none';
   if(id){
     const x=st.ideas.find(i=>i.id===id);if(!x)return;
-    ['iti','ica','ide','ici','iaddr','ico','idu','ipr','irt','iul','ino','itg0','ilat','ilng'].forEach((f,i)=>{
-      const flds=['title','cat','desc','city','addr','cost','duration','priority','rating','url','note','tags','lat','lng'];
+    ['iti','ica','ide','ici','iaddr','ico','idu','ipr','irt','iul','iimg','ino','itg0','ilat','ilng'].forEach((f,i)=>{
+      const flds=['title','cat','desc','city','addr','cost','duration','priority','rating','url','img','note','tags','lat','lng'];
       const el=document.getElementById(f);if(el)el.value=x[flds[i]]||'';
     });
-  }else{['iti','ide','ici','iaddr','ico','idu','irt','iul','ino','itg0','ilat','ilng'].forEach(f=>{const el=document.getElementById(f);if(el)el.value='';});document.getElementById('ipr').value='haute';document.getElementById('ica').value='';}
+    if(document.getElementById('iimg').value==='none')document.getElementById('iimg').value='';
+  }else{['iti','ide','ici','iaddr','ico','idu','irt','iul','iimg','ino','itg0','ilat','ilng'].forEach(f=>{const el=document.getElementById(f);if(el)el.value='';});document.getElementById('ipr').value='haute';document.getElementById('ica').value='';}
   om('m-idea');
 }
 function saveIdea(){
   const title=document.getElementById('iti').value.trim();
   if(!title){toast('Titre requis','e');return;}
   const id=document.getElementById('iid').value;
-  const f={title,cat:document.getElementById('ica').value,desc:document.getElementById('ide').value,city:document.getElementById('ici').value,addr:document.getElementById('iaddr').value,cost:document.getElementById('ico').value,duration:document.getElementById('idu').value,priority:document.getElementById('ipr').value,rating:document.getElementById('irt').value,url:document.getElementById('iul').value,note:document.getElementById('ino').value,tags:document.getElementById('itg0').value,lat:document.getElementById('ilat')?document.getElementById('ilat').value:'',lng:document.getElementById('ilng')?document.getElementById('ilng').value:''};
+  const f={title,cat:document.getElementById('ica').value,desc:document.getElementById('ide').value,city:document.getElementById('ici').value,addr:document.getElementById('iaddr').value,img:document.getElementById('iimg').value.trim(),cost:document.getElementById('ico').value,duration:document.getElementById('idu').value,priority:document.getElementById('ipr').value,rating:document.getElementById('irt').value,url:document.getElementById('iul').value,note:document.getElementById('ino').value,tags:document.getElementById('itg0').value,lat:document.getElementById('ilat')?document.getElementById('ilat').value:'',lng:document.getElementById('ilng')?document.getElementById('ilng').value:''};
   if(id){const i=st.ideas.findIndex(x=>x.id===id);if(i!==-1)st.ideas[i]={...st.ideas[i],...f};}
   else st.ideas.push({id:uid(),...f,favorite:false,date:new Date().toISOString()});
   save();cm('m-idea');renderIdeas();updBadges();toast('Enregistré avec succès','s');if(mapInitialized)refreshMarkers();
