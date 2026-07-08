@@ -652,6 +652,7 @@ body.home #sb,body.home #main{display:none}
         <option value="alpha">A &#8594; Z</option>
         <option value="cout">Co&#251;t &#8593;</option>
         <option value="prio">Priorit&#233;</option>
+        <option value="note">&#9733; &#201;toiles</option>
       </select>
       <button class="btn bs bsm" onclick="toggleFav()" id="favbtn">Favoris</button>
       <input type="text" class="fsel" id="scity" placeholder="Filtrer par ville..." oninput="renderIdeas()" style="max-width:160px">
@@ -755,6 +756,14 @@ body.home #sb,body.home #main{display:none}
         <option value="route">Itin&#233;raire &amp; trajets</option>
       </select>
       <select class="fsel" id="mapDaySel" onchange="setMapDay(this.value)" style="display:none"></select>
+      <select class="fsel" id="mapStarSel" onchange="setMapStars(this.value)" title="Filtrer par nombre d'&#233;toiles">
+        <option value="0">&#9733; Toutes</option>
+        <option value="5">&#9733; 5 uniquement</option>
+        <option value="4">&#9733; 4 et +</option>
+        <option value="3">&#9733; 3 et +</option>
+        <option value="2">&#9733; 2 et +</option>
+        <option value="1">&#9733; 1 et +</option>
+      </select>
       <div id="map-legend" style="display:flex;gap:8px;flex-wrap:wrap"></div>
     </div>
     <div id="leaflet-map" style="flex:1;width:100%;min-height:400px"></div>
@@ -850,7 +859,10 @@ body.home #sb,body.home #main{display:none}
     </div>
     <div class="fr">
       <div class="fg"><label class="fl">Priorit&#233;</label><select class="fse" id="ipr"><option value="haute">Haute</option><option value="moyenne">Moyenne</option><option value="basse">Basse</option></select></div>
-      <div class="fg"><label class="fl">Note /5</label><input class="fi" type="number" id="irt" min="0" max="5" placeholder="5"></div>
+      <div class="fg"><label class="fl">&#201;toiles <span style="font-weight:400;text-transform:none;letter-spacing:0">(re-cliquer pour retirer)</span></label>
+        <input type="hidden" id="irt">
+        <div id="irt-stars" style="display:flex;gap:5px;padding:7px 0;font-size:22px;line-height:1;user-select:none"></div>
+      </div>
     </div>
     <div class="fr">
       <div class="fg"><label class="fl">Latitude (carte)</label><input class="fi" type="number" id="ilat" step="any" placeholder="Ex: 35.6762"></div>
@@ -1667,6 +1679,27 @@ function renderDash(){
 }
 
 // IDEAS
+// ── Étoiles (1 à 5) ──
+function cardStars(i){
+  const r=Math.round(parseFloat(i.rating)||0);
+  let h='';
+  for(let n=1;n<=5;n++)h+=`<span onclick="event.stopPropagation();rateIdea('${i.id}',${n})" style="cursor:pointer;font-size:15px;color:${n<=r?'var(--gold)':'var(--border2)'}" title="${n} étoile${n>1?'s':''} (re-cliquer pour retirer)">★</span>`;
+  return h;
+}
+function rateIdea(id,n){
+  const i=st.ideas.find(x=>x.id===id);if(!i)return;
+  i.rating=(Math.round(parseFloat(i.rating)||0)===n)?'':String(n);
+  save();renderIdeas();
+}
+function paintModalStars(){
+  const v=Math.round(parseFloat(document.getElementById('irt').value)||0);
+  document.getElementById('irt-stars').innerHTML=[1,2,3,4,5].map(n=>`<span onclick="modalRate(${n})" style="cursor:pointer;color:${n<=v?'var(--gold)':'var(--border2)'}">★</span>`).join('');
+}
+function modalRate(n){
+  const el=document.getElementById('irt');
+  el.value=(Math.round(parseFloat(el.value)||0)===n)?'':String(n);
+  paintModalStars();
+}
 function showAddIdea(id){
   document.getElementById('iid').value=id||'';
   document.getElementById('midt').textContent=id?'Modifier l\'idée':'Nouvelle idée';
@@ -1679,6 +1712,7 @@ function showAddIdea(id){
     });
     if(document.getElementById('iimg').value==='none')document.getElementById('iimg').value='';
   }else{['iti','ide','ici','iaddr','ico','idu','irt','iul','iimg','ino','itg0','ilat','ilng'].forEach(f=>{const el=document.getElementById(f);if(el)el.value='';});document.getElementById('ipr').value='haute';document.getElementById('ica').value='';}
+  paintModalStars();
   om('m-idea');
 }
 function saveIdea(){
@@ -1740,6 +1774,7 @@ function renderIdeas(){
   if(srt==='alpha')ideas.sort((a,b)=>a.title.localeCompare(b.title));
   else if(srt==='cout')ideas.sort((a,b)=>parseFloat(a.cost||0)-parseFloat(b.cost||0));
   else if(srt==='prio'){const p={haute:0,moyenne:1,basse:2};ideas.sort((a,b)=>(p[a.priority]||1)-(p[b.priority]||1));}
+  else if(srt==='note')ideas.sort((a,b)=>(parseFloat(b.rating)||0)-(parseFloat(a.rating)||0));
   else ideas.sort((a,b)=>new Date(b.date)-new Date(a.date));
   const sub=document.getElementById('ideas-sub');
   if(sub){const dest=(tripMeta().dest||'').trim();sub.textContent=`${st.ideas.length} lieu${st.ideas.length>1?'x':''} repéré${st.ideas.length>1?'s':''}${dest?' — '+dest:''}`;}
@@ -1754,10 +1789,10 @@ function renderIdeas(){
       </div>
       <div class="ich"><div class="ict">${i.title}</div><div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${plannedIds.has(i.id)||plannedNames.has(i.title.toLowerCase())?'<span class="icc" style="background:var(--moss-lt);color:var(--moss)">Planifié</span>':''}<span class="icc">${catLabel(i.cat)}</span></div></div>
       ${i.desc?`<div class="icd">${i.desc}</div>`:''}
+      <div style="margin-bottom:6px;line-height:1">${cardStars(i)}</div>
       <div class="icm">
         ${i.city?`<span class="itg">${i.city}</span>`:''}
         ${i.cost&&parseFloat(i.cost)>0?`<span class="itg">${fmtCost(i.cost)}</span>`:'<span class="itg">Gratuit</span>'}
-        ${i.rating?`<span class="itg">${i.rating}/5</span>`:''}
       </div>
       <div class="ica">
         <button class="btn bs bsm" onclick="showAddIdea('${i.id}')">Modifier</button>
@@ -2558,12 +2593,19 @@ const MODE_SPEED={walk:4.5,bike:15,car:70,train:90,bus:45,boat:35,plane:700};
 const OSRM_MODES={car:true,bus:true,walk:true,bike:true};
 function setMapMode(v){st.mapMode=v;save();syncMapControls();refreshMarkers();}
 function setMapDay(v){st.mapDay=v;save();drawRoute();}
+let mapMinStars=0;
+function setMapStars(v){
+  mapMinStars=parseInt(v)||0;
+  keepMapView=true;refreshMarkers();keepMapView=false;
+}
 function syncMapControls(){
   const ms=document.getElementById('mapModeSel'),ds=document.getElementById('mapDaySel');
   if(!ms||!ds)return;
   ms.value=st.mapMode==='route'?'route':'points';
   ds.style.display=st.mapMode==='route'?'':'none';
   ds.innerHTML=`<option value="">Tous les jours</option>`+st.days.map(d=>`<option value="${d.id}" ${st.mapDay===d.id?'selected':''}>Jour ${d.number}${d.city?' — '+d.city:''}</option>`).join('');
+  const ss=document.getElementById('mapStarSel');
+  if(ss)ss.value=String(mapMinStars);
 }
 // Idée liée à une activité : par identifiant d'abord, par nom en secours (anciennes données)
 function ideaOfAct(a){
@@ -2732,8 +2774,10 @@ function refreshMarkers() {
   mapMarkers.forEach(m => leafletMap.removeLayer(m));
   mapMarkers = [];
 
-  // Mode « Tous les points » : toutes les idées géolocalisées (filtrées par la légende)
-  const withCoords = st.ideas.filter(i => i.lat && i.lng && parseFloat(i.lat) && parseFloat(i.lng) && !mapCatFilter.has(i.cat||'autre'));
+  // Mode « Tous les points » : idées géolocalisées, filtrées par légende (catégories) et étoiles
+  const withCoords = st.ideas.filter(i => i.lat && i.lng && parseFloat(i.lat) && parseFloat(i.lng)
+    && !mapCatFilter.has(i.cat||'autre')
+    && (mapMinStars<=0 || Math.round(parseFloat(i.rating)||0)>=mapMinStars));
 
   withCoords.forEach(idea => {
     const color = CAT_COLORS[idea.cat] || '#888';
@@ -2756,6 +2800,7 @@ function refreshMarkers() {
         ${dayInfo}
         <div class="map-popup-cat" style="color:${color}">${catLabel(idea.cat)}</div>
         <div class="map-popup-title">${idea.title}</div>
+        ${parseFloat(idea.rating)?`<div style="color:#C8A050;font-size:14px;letter-spacing:2px;margin-bottom:3px">${'★'.repeat(Math.round(parseFloat(idea.rating)))}<span style="color:#DDD8D0">${'★'.repeat(5-Math.round(parseFloat(idea.rating)))}</span></div>`:''}
         ${idea.desc ? `<div class="map-popup-desc">${idea.desc.slice(0,100)}${idea.desc.length>100?'…':''}</div>` : ''}
         <div class="map-popup-meta">
           ${idea.city ? `<span>${idea.city}</span>` : ''}
