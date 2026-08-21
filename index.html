@@ -776,8 +776,13 @@ body.home #sb,body.home #main{display:none}
   <!-- CARNET DE VOYAGE -->
   <div class="pg" id="pg-carnet">
     <div class="ph">
-      <div class="pt">Carnet de voyage</div>
-      <div class="ps">Votre itinéraire final, jour par jour</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+        <div>
+          <div class="pt">Carnet de voyage</div>
+          <div class="ps">Votre itinéraire final, jour par jour</div>
+        </div>
+        <button class="btn bred" onclick="downloadCarnetPDF()">T&#233;l&#233;charger en PDF</button>
+      </div>
     </div>
     <div id="carnetEl"></div>
   </div>
@@ -1530,6 +1535,101 @@ function checkMobile(){const m=window.innerWidth<768;document.getElementById('mb
 window.addEventListener('resize',checkMobile);checkMobile();
 
 // EXPORT/IMPORT
+// ─── CARNET EN PDF ───
+function loadJsPDF(){
+  if(window.jspdf&&window.jspdf.jsPDF)return Promise.resolve(window.jspdf.jsPDF);
+  return new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    s.onload=()=>res(window.jspdf.jsPDF);
+    s.onerror=rej;
+    document.head.appendChild(s);
+  });
+}
+// Texte compatible polices PDF (latin-1) : apostrophes/guillemets typographiques normalisés, emojis retirés
+function pdfTxt(s){
+  return String(s||'')
+    .replace(/[’‘]/g,"'").replace(/[“”«»]/g,'"').replace(/[–—]/g,'-').replace(/…/g,'...')
+    .replace(/[  ]/g,' ')
+    .replace(/[^ -ÿ\n]/g,'').replace(/ +/g,' ').trim();
+}
+function pdfMoney(v){
+  return Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' €';
+}
+async function downloadCarnetPDF(){
+  if(!st.days||!st.days.length){toast('Aucun jour planifié dans le carnet','e');return;}
+  toast('Génération du PDF…');
+  let jsPDF;
+  try{jsPDF=await loadJsPDF();}
+  catch(e){toast('Impossible de charger le module PDF — vérifiez la connexion','e');return;}
+  const trip=tripMeta();
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  const L=18,R=192,CW=R-L-16;
+  const red=[192,57,43],ink=[28,24,20],gray=[110,102,94],lgray=[165,158,150],line=[226,220,212];
+  let y=24;
+  const ensure=h=>{if(y+h>280){doc.addPage();y=18;}};
+  // En-tête
+  doc.setFont('helvetica','bold');doc.setFontSize(21);doc.setTextColor(...ink);
+  doc.text(pdfTxt(trip.name||'Mon Voyage'),L,y);
+  y+=7;
+  doc.setFont('helvetica','normal');doc.setFontSize(9.5);doc.setTextColor(...gray);
+  const sub=['Carnet de voyage',trip.dest,trip.date?new Date(trip.date+'T12:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'}):''].filter(Boolean).join('  ·  ');
+  doc.text(pdfTxt(sub),L,y);
+  y+=4;doc.setDrawColor(...red);doc.setLineWidth(.6);doc.line(L,y,R,y);y+=10;
+  // Jours
+  st.days.forEach(day=>{
+    const acts=day.activities||[];
+    ensure(22);
+    doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(...red);
+    doc.text('JOUR '+day.number,L,y);
+    doc.setFontSize(12);doc.setTextColor(...ink);
+    doc.text(pdfTxt((day.title||'').replace(/^Jour \d+ — /,'')),L+20,y);
+    if(day.city){doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...gray);doc.text(pdfTxt(day.city),R,y,{align:'right'});}
+    y+=2.5;doc.setDrawColor(...line);doc.setLineWidth(.3);doc.line(L,y,R,y);y+=6.5;
+    if(!acts.length){
+      doc.setFont('helvetica','italic');doc.setFontSize(9);doc.setTextColor(...lgray);
+      doc.text('Aucune activité planifiée',L+16,y);y+=9;
+    }
+    let tot=0;
+    acts.forEach(a=>{
+      tot+=parseFloat(a.cost||0);
+      doc.setFont('helvetica','bold');doc.setFontSize(10.5);
+      const nameLines=doc.splitTextToSize(pdfTxt(a.name),CW);
+      let notesLines=[];
+      if(a.notes){doc.setFont('helvetica','italic');doc.setFontSize(8.5);notesLines=doc.splitTextToSize(pdfTxt(a.notes),CW);}
+      ensure(4.6*nameLines.length+4.2+(notesLines.length?3.9*notesLines.length+1.2:0)+3);
+      doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(...red);
+      if(a.time)doc.text(a.time,L,y);
+      doc.setFontSize(10.5);doc.setTextColor(...ink);
+      doc.text(nameLines,L+16,y);
+      y+=4.6*nameLines.length;
+      doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(...gray);
+      const meta=[a.duration,a.cat?catLabel(a.cat):'',parseFloat(a.cost)>0?pdfMoney(parseFloat(a.cost)):'Gratuit'].filter(Boolean).map(pdfTxt).join('  ·  ');
+      doc.text(meta,L+16,y);y+=4.2;
+      if(notesLines.length){
+        doc.setFont('helvetica','italic');doc.setFontSize(8.5);doc.setTextColor(...lgray);
+        doc.text(notesLines,L+16,y);y+=3.9*notesLines.length+1.2;
+      }
+      y+=2.6;
+    });
+    if(tot>0){ensure(6);doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(...gray);doc.text('Total du jour : '+pdfMoney(tot),R,y,{align:'right'});y+=6;}
+    y+=5;
+  });
+  // Pied de document
+  ensure(14);
+  doc.setDrawColor(...red);doc.setLineWidth(.6);doc.line(L,y,R,y);y+=6;
+  const totBudget=st.budget.reduce((s,b)=>s+eurOf(b),0)+planningCost();
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...gray);
+  doc.text(pdfTxt(`${st.days.length} jour${st.days.length>1?'s':''}  ·  budget estimé ${pdfMoney(totBudget)}  —  généré le ${new Date().toLocaleDateString('fr-FR')}`),L,y);
+  // Numéros de page
+  const n=doc.getNumberOfPages();
+  for(let p=1;p<=n;p++){
+    doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...lgray);
+    doc.text(p+' / '+n,105,291,{align:'center'});
+  }
+  doc.save('carnet-'+((trip.name||'voyage').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'voyage')+'.pdf');
+  toast('PDF téléchargé !','s');
+}
 function downloadCarnet(){
   if(!st.days||!st.days.length){toast('Aucun jour planifié dans le carnet','e');return;}
   const trip=tripMeta();
