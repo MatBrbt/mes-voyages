@@ -1556,6 +1556,61 @@ function pdfTxt(s){
 function pdfMoney(v){
   return Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' €';
 }
+// ── Emojis dans le PDF : rendus en petites images (les polices PDF n'ont pas ces glyphes) ──
+const EMO_RE=new RegExp('\\p{Regional_Indicator}{2}|\\p{Extended_Pictographic}(?:\\uFE0F|\\u200D\\p{Extended_Pictographic}\\uFE0F?)*','gu');
+const emojiPngCache={};
+function emojiPng(ch){
+  if(emojiPngCache[ch])return emojiPngCache[ch];
+  const c=document.createElement('canvas');c.width=c.height=64;
+  const x=c.getContext('2d');
+  x.font='52px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
+  x.textBaseline='middle';x.textAlign='center';
+  x.fillText(ch,32,36);
+  return emojiPngCache[ch]=c.toDataURL('image/png');
+}
+// Découpe en tokens texte / emoji
+function richTokens(s){
+  const out=[];let last=0;
+  s=String(s||'');
+  for(const m of s.matchAll(EMO_RE)){
+    if(m.index>last)out.push({e:false,v:s.slice(last,m.index)});
+    out.push({e:true,v:m[0]});
+    last=m.index+m[0].length;
+  }
+  if(last<s.length)out.push({e:false,v:s.slice(last)});
+  return out;
+}
+// Construit des lignes enveloppées {lines,h} — la police/taille du doc doit être réglée AVANT l'appel
+function richLayout(doc,raw,maxW,lineH){
+  const fontSize=doc.getFontSize();
+  const emW=fontSize*0.3528*1.08;
+  const lines=[];let cur=[],curW=0;
+  const push=()=>{lines.push(cur);cur=[];curW=0;};
+  String(raw||'').split('\n').forEach((para,pi)=>{
+    if(pi>0)push();
+    richTokens(para).forEach(tok=>{
+      if(tok.e){
+        if(curW+emW>maxW&&cur.length)push();
+        cur.push({e:true,v:tok.v,w:emW});curW+=emW;
+      }else{
+        pdfTxt(tok.v).split(' ').forEach(w0=>{
+          if(!w0)return;
+          const withSp=cur.length?' '+w0:w0;
+          const tw=doc.getTextWidth(withSp);
+          if(curW+tw>maxW&&cur.length){
+            push();
+            const tw2=doc.getTextWidth(w0);
+            cur.push({e:false,v:w0,w:tw2});curW=tw2;
+          }else{
+            cur.push({e:false,v:withSp,w:tw});curW+=tw;
+          }
+        });
+      }
+    });
+  });
+  if(cur.length)push();
+  return {lines,h:lines.length*lineH};
+}
 async function downloadCarnetPDF(){
   if(!st.days||!st.days.length){toast('Aucun jour planifié dans le carnet','e');return;}
   toast('Génération du PDF…');
@@ -1590,25 +1645,36 @@ async function downloadCarnetPDF(){
       doc.setFont('helvetica','italic');doc.setFontSize(9);doc.setTextColor(...lgray);
       doc.text('Aucune activité planifiée',L+16,y);y+=9;
     }
+    // Dessine des lignes riches (texte + emojis en images), avec saut de page ligne à ligne
+    const drawRich=(lines,x,lineH)=>{
+      const fs=doc.getFontSize();
+      const emH=fs*0.3528*1.15;
+      lines.forEach(lineToks=>{
+        ensure(lineH+2);
+        let cx=x;
+        lineToks.forEach(t=>{
+          if(t.e){try{doc.addImage(emojiPng(t.v),'PNG',cx+emW0(fs)*0.04,y-emH*0.78,emH,emH);}catch(e){}cx+=t.w;}
+          else{doc.text(t.v,cx,y);cx+=t.w;}
+        });
+        y+=lineH;
+      });
+    };
+    const emW0=fs=>fs*0.3528*1.08;
     let tot=0;
     acts.forEach(a=>{
       tot+=parseFloat(a.cost||0);
-      doc.setFont('helvetica','bold');doc.setFontSize(10.5);
-      const nameLines=doc.splitTextToSize(pdfTxt(a.name),CW);
-      let notesLines=[];
-      if(a.notes){doc.setFont('helvetica','italic');doc.setFontSize(8.5);notesLines=doc.splitTextToSize(pdfTxt(a.notes),CW);}
-      ensure(4.6*nameLines.length+4.2+(notesLines.length?3.9*notesLines.length+1.2:0)+3);
+      ensure(12);
       doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(...red);
       if(a.time)doc.text(a.time,L,y);
-      doc.setFontSize(10.5);doc.setTextColor(...ink);
-      doc.text(nameLines,L+16,y);
-      y+=4.6*nameLines.length;
+      doc.setFont('helvetica','bold');doc.setFontSize(10.5);doc.setTextColor(...ink);
+      drawRich(richLayout(doc,a.name,CW,4.6).lines,L+16,4.6);
       doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(...gray);
       const meta=[a.duration,a.cat?catLabel(a.cat):'',parseFloat(a.cost)>0?pdfMoney(parseFloat(a.cost)):'Gratuit'].filter(Boolean).map(pdfTxt).join('  ·  ');
-      doc.text(meta,L+16,y);y+=4.2;
-      if(notesLines.length){
+      ensure(6);doc.text(meta,L+16,y);y+=4.2;
+      if(a.notes){
         doc.setFont('helvetica','italic');doc.setFontSize(8.5);doc.setTextColor(...lgray);
-        doc.text(notesLines,L+16,y);y+=3.9*notesLines.length+1.2;
+        drawRich(richLayout(doc,a.notes,CW,3.9).lines,L+16,3.9);
+        y+=1.2;
       }
       y+=2.6;
     });
